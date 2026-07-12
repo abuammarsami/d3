@@ -1,9 +1,9 @@
 {
-  "$schema": "https://json.schemastore.org/claude-code-plugin.json",
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "d3",
   "displayName": "Document-Driven Development (D3)",
   "description": "Prime an AI session with the right docs before you build, and capture new business rules, decisions, and bugs into their canonical home after. Repo-agnostic: discovers each repo's docs/ taxonomy at runtime.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": {
     "name": "Md. Abu Ammar",
     "url": "https://github.com/abuammarsami"

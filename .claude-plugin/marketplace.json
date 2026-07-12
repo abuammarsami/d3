@@ -2,8 +2,7 @@
   "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
   "name": "ammar-skills",
   "owner": {
-    "name": "Md. Abu Ammar",
-    "email": "partners2041@gmail.com"
+    "name": "Md. Abu Ammar"
   },
   "description": "Claude Code skills by Md. Abu Ammar.",
   "plugins": [
@@ -11,7 +10,6 @@
       "name": "d3",
       "source": "./",
       "description": "Document-Driven Development (D3) - prime an AI session with the right docs before you build, and capture new rules, decisions, and bugs into their canonical home after.",
-      "version": "1.0.0",
       "author": { "name": "Md. Abu Ammar" },
       "homepage": "https://github.com/abuammarsami/d3",
       "license": "MIT",

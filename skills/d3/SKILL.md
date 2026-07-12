@@ -1,6 +1,6 @@
 ---
 name: d3
-description: "Document-Driven Development - prime an AI session with the right docs before you build, and capture new business rules, decisions, and bugs into their canonical home after. Use when starting a feature/bug in a repo that has a docs/ knowledge base, or when the user says /d3, 'prime', or 'capture this'."
+description: "Document-Driven Development. Primes an AI session with the right docs before building, and captures new business rules, decisions, and bugs into their canonical home after. Use when the user runs /d3:d3 (or /d3), or explicitly asks to 'prime' the context for a task or 'capture' a rule, decision, or bug into the docs."
 ---
 
 # /d3
@@ -12,19 +12,22 @@ by-product of the work, but the medium of it.
 
 ## Usage
 
-```
-/d3                                   # print this help and stop
-/d3 --help                            # same as bare /d3
-/d3 prime <task or feature>           # load the right docs for this task into context, output a context pack
-/d3 status                            # show what's active/draft across docs/plans/** (+ open TODOs)
+Installed as a plugin, the command is namespaced by the plugin: **`/d3:d3`**. (If instead you add
+this as a personal or project skill named `d3`, the bare `/d3` works too. Both take the same verbs.)
 
-/d3 capture <what happened>           # classify, then route to the canonical doc (asks if ambiguous)
-/d3 capture --plan <feature>          # future design      → docs/plans/{module}/{kebab}/README.md   (type: plan, status: draft)
-/d3 capture --decision <choice>       # architectural fork → docs/architecture/decisions/adr-NNNN-{kebab}.md (type: adr, status: proposed)
-/d3 capture --bug <symptom>           # shipped bug/parity → docs/reference/audits/YYYY-MM-DD-{kebab}.md (IMMUTABLE, dated)
-/d3 capture --incident <what broke>   # production issue   → docs/reference/incidents/{kebab}.md
-/d3 capture --rule <domain rule>      # money/tier/entitle → docs/reference/business-rules/{domain}.md (cited to file:line)
-/d3 capture --module <module>         # current-state doc  → docs/reference/modules/{module}.md
+```
+/d3:d3                                   # print this help and stop
+/d3:d3 --help                            # same as bare /d3:d3
+/d3:d3 prime <task or feature>           # load the right docs for this task into context, output a context pack
+/d3:d3 status                            # show what's active/draft across docs/plans/** (+ open TODOs)
+
+/d3:d3 capture <what happened>           # classify, then route to the canonical doc (asks if ambiguous)
+/d3:d3 capture --plan <feature>          # future design      → docs/plans/{module}/{kebab}/README.md   (type: plan, status: draft)
+/d3:d3 capture --decision <choice>       # architectural fork → docs/architecture/decisions/adr-NNNN-{kebab}.md (type: adr, status: proposed)
+/d3:d3 capture --bug <symptom>           # shipped bug/parity → docs/reference/audits/YYYY-MM-DD-{kebab}.md (IMMUTABLE, dated)
+/d3:d3 capture --incident <what broke>   # production issue   → docs/reference/incidents/{kebab}.md
+/d3:d3 capture --rule <domain rule>      # money/tier/entitle → docs/reference/business-rules/{domain}.md (cited to file:line)
+/d3:d3 capture --module <module>         # current-state doc  → docs/reference/modules/{module}.md
 ```
 
 ## What D³ is for
@@ -38,7 +41,7 @@ work** — docs ship in the same change set as the code, never as an afterthough
 
 ## What You Must Do When Invoked
 
-If invoked as `/d3` or `/d3 --help` (or `-h`) with no verb, print the `## Usage` block
+If invoked with no verb (bare `/d3:d3` or `/d3`, or `--help`/`-h`), print the `## Usage` block
 verbatim and stop. Do not prime, do not capture, do not scan the repo.
 
 Otherwise dispatch on the verb: `prime` → `## prime`, `capture` → `## capture`,
@@ -127,6 +130,12 @@ Goal: load the 3–6 docs that actually matter for `<task>` and hand back a comp
 Goal: file new knowledge in its **one canonical home**, apply standard frontmatter, and
 do the mandatory follow-through so the fact is discoverable by the next `prime`.
 
+**Confirm before you write.** `capture` mutates multiple governance files (a new doc, plus
+folder indexes, roadmaps, and progress trackers). Before writing anything, state the chosen
+destination path and the exact list of files you will create or modify, and proceed only
+once the user confirms. Never write these files silently, and — if this skill was
+auto-invoked rather than explicitly run — always confirm first.
+
 Pick the destination by the *kind* of knowledge (use the flag if given; otherwise infer,
 and if genuinely ambiguous, ask which one). Route table:
 
@@ -139,10 +148,15 @@ and if genuinely ambiguous, ask which one). Route table:
 | **Domain / pricing / entitlement rule** | `docs/reference/business-rules/{domain}.md` | `type: reference`, `status: active` | Model in one paragraph → rules, each **cited to `file:line`**, with the load-bearing rule in **bold** |
 | **Current module state** ("how it works today") | `docs/reference/modules/{module}.md` | `type: reference`, `status: active` | How the module works *now* — not why (that's an ADR) or how it'll change (that's a plan) |
 
+**ADR numbering — check before you write.** For a `--decision`, list the existing
+`docs/architecture/decisions/adr-*.md`, take `max(NNNN) + 1`, and confirm the target
+filename does not already exist before creating it. Never guess the number — a miscount can
+collide with an immutable decision record.
+
 **HARD RULE — immutability:** never edit a shipped ADR or a dated audit. To revise an
-ADR, write a new one that `supersedes:` it. To re-audit, write a **new dated file** — the
-history of dated files is the record of progress. Same for incidents: a new occurrence is
-a new file.
+ADR, write a new one that `supersedes:` it (and stamp the old one's `superseded-by:` — a
+pointer, not a rewrite). To re-audit, write a **new dated file** — the history of dated
+files is the record of progress. Same for incidents: a new occurrence is a new file.
 
 ### Mandatory follow-through (the "no undocumented work" rule)
 
