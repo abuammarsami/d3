@@ -174,6 +174,20 @@ summarizes each in a line. A focused pack, not a dump.
 
 ---
 
+## Testing
+
+The skill ships with a scored eval suite in [`evals/`](evals/) — hermetic cases (each
+scaffolds a tiny repo with a `docs/` corpus) that check `prime` surfaces the right context,
+`capture` routes to the correct home and confirms before writing, and the fallback path
+never hallucinates docs. Run them with Claude Code's eval harness:
+
+```text
+claude plugin eval d3@ammar-skills --ablation with-without
+```
+
+`--ablation with-without` scores each task **with** and **without** the skill and reports
+the delta. (`claude plugin eval` is currently in early access.) See [`evals/README.md`](evals/README.md).
+
 ## Contributing
 
 Issues and PRs welcome — bug reports, taxonomy ideas, and integration hooks especially. Open

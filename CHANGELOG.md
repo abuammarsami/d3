@@ -19,6 +19,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `assets/banner.svg` — a static, GitHub-safe project banner.
+- `evals/` — a scored eval suite (help, prime-surfaces-business-rule, prime-fallback-no-docs,
+  capture-bug-routing) with hermetic fixtures and LLM-rubric graders, for
+  `claude plugin eval --ablation with-without`.
+- `capture` now confirms the files it will touch before writing, and checks the next ADR
+  number for collisions.
 
 ## [1.0.0] - 2026-07-13
 

@@ -1,0 +1,15 @@
+name: Help — bare invocation prints usage and stops
+description: >
+  Invoked with no verb, the skill must print its Usage block and stop — no repo scan,
+  no file writes. This is the guard that makes an accidental auto-trigger cheap.
+tags: [help, safety]
+runs: 2
+timeout: 30
+
+prompt: |
+  /d3:d3
+
+criteria:
+  - The response shows the usage / command list, including the verbs prime, capture, and status.
+  - It does NOT read, grep, or scan repository files.
+  - It does NOT create, edit, or write any file.
