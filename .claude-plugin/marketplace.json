@@ -9,11 +9,21 @@
     {
       "name": "d3",
       "source": "./",
-      "description": "Document-Driven Development (D3) - prime an AI session with the right docs before you build, and capture new rules, decisions, and bugs into their canonical home after.",
-      "author": { "name": "Md. Abu Ammar" },
+      "description": "Document-Driven Development (D³): one docs system people and agents share — init, prime, spec, capture, check, review, status.",
+      "author": {
+        "name": "Md. Abu Ammar"
+      },
       "homepage": "https://github.com/abuammarsami/d3",
       "license": "MIT",
-      "keywords": ["documentation", "context-engineering", "ai-tooling", "workflow", "agents"]
+      "keywords": [
+        "documentation",
+        "docs-as-code",
+        "context-engineering",
+        "adr",
+        "agents-md",
+        "ai-tooling",
+        "agents"
+      ]
     }
   ]
 }
