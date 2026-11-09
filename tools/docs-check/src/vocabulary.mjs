@@ -34,6 +34,8 @@ review:
 
 template-paths: [docs/templates/]
 exempt-paths: []
+# Paths no check reads at all (for example templates shipped for other repos).
+ignore-paths: []
 
 # D³ checks beyond the base set. Each is off, warn or error.
 checks:
@@ -89,6 +91,7 @@ export function parseVocabularyYaml(yamlText) {
     reviewExemptStatuses: new Set(v.review['exempt-statuses']),
     templatePaths: v['template-paths'],
     exemptPaths: v['exempt-paths'] ?? [],
+    ignorePaths: v['ignore-paths'] ?? [],
     checks,
     evidenceAllow: v['evidence-allow'] ?? [],
     citationAliases: v['citation-aliases'] ?? {},

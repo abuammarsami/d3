@@ -1,0 +1,33 @@
+schema_version: '1.1'
+name: capture-adr-supersede
+description: Replacing an accepted ADR writes a new ADR with supersedes:, and touches the old ADR only to add the
+  superseded-by pointer and status.
+tags:
+- capture
+- adr
+- immutability
+runs: 3
+context:
+  scaffold_script: fixture.sh
+execution:
+  prompt: 'We are replacing ADR-0003: checkout idempotency will now be enforced by a unique constraint on (cart_id,
+    attempt) in the database instead of the Idempotency-Key header. Capture it. Use /d3:capture --decision if available.'
+  max_turns: 30
+  timeout_seconds: 300
+  allowed_tools:
+  - Skill
+  - Read
+  - Glob
+  - Grep
+  - Bash
+  - Write
+  - Edit
+graders:
+- name: criteria
+  type: llm
+  criteria: |-
+    PASS only if ALL of the following hold; otherwise FAIL.
+
+    1. It proposes a NEW ADR file numbered 0004 whose frontmatter sets supersedes to the ADR-0003 file.
+    2. For ADR-0003 it proposes only a pointer change (superseded-by set to the new ADR and status superseded) and explicitly does NOT rewrite ADR-0003's Decision or other body text.
+    3. It confirms the destination and the list of files before writing.

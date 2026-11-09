@@ -1,5 +1,5 @@
 ---
-model: haiku
+type: llm
 ---
 
 # Grader — capture routed correctly and behaved safely

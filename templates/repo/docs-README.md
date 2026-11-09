@@ -134,6 +134,8 @@ review:
 
 template-paths: [docs/templates/]
 exempt-paths: []
+# Paths no check reads at all (for example templates shipped for other repos).
+ignore-paths: []
 
 # D³ checks beyond the base set. Each is off, warn or error.
 checks:

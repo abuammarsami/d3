@@ -1,41 +1,47 @@
 # Evals
 
-Scored behavior tests for the `d3` skill, run with Claude Code's eval harness.
-
-> `claude plugin eval` is in **early access**. This suite is written to the documented
-> layout (`evals/**/case.yaml`, optional `graders/*.md`) and doubles as executable
-> documentation of what `prime` and `capture` are supposed to do. Field names may shift
-> while the feature stabilizes.
+Behaviour tests for the D³ skills, run with Claude Code's eval harness
+([docs](https://code.claude.com/docs/en/plugin-evals.md)). Each case is a `case.yaml` (schema 1.1)
+plus a `fixture.sh` that builds a tiny repo with a `docs/` corpus in the run's empty workspace.
 
 ## Run
 
 ```bash
-# from the repo root, with the plugin installed:
-claude plugin eval d3@ammar-skills --ablation with-without --verbose
+# with and without the plugin, to see what it adds over a cold agent
+claude plugin eval . --scaffold --ablation with-without --trust-plugin
 
-# or point at this directory directly:
-claude plugin eval . --ablation with-without
+# one case, one run, cheaply
+claude plugin eval . --scaffold --case review-flags-rule-violation --runs 1 --ablation none --model sonnet
 ```
 
-`--ablation with-without` runs each case twice — **with** the skill and **without** it —
-and reports the score delta, so you can see how much context the skill actually adds
-versus a cold agent.
+`--scaffold` is required: it runs each case's `fixture.sh` (author-written Bash, as you). Results go to
+`evals/results/` (git-ignored).
 
-## What each case checks
+## Cases
 
 | Case | Verb | What it proves |
-|------|------|----------------|
-| `help` | — | Bare invocation prints the usage block and does **not** scan or touch files. |
-| `prime-surfaces-business-rule` | `prime` | For a tier/quota task, it loads the governing business rule + the active plan as a **compact context pack**, not a file dump. |
-| `prime-fallback-no-docs` | `prime` | With no `docs/README.md`, it uses the six-bucket fallback and never cites doc paths that don't exist. |
-| `capture-bug-routing` | `capture` | A shipped bug routes to a **dated, immutable** audit, it **confirms the files before writing**, and it never edits an existing ADR. |
+|---|---|---|
+| `help` | — | Bare `/d3:d3` prints usage and touches nothing. |
+| `init-dry-run-first` | init | Shows create / skip / append before writing; keeps an existing `CLAUDE.md`; no overview in `AGENTS.md`. |
+| `init-existing-report-only` | init | A repo that already has a docs system is reported on, never scaffolded over. |
+| `prime-surfaces-business-rule` | prime | Loads the governing rule and the active plan as a compact pack, not a dump. |
+| `prime-fallback-no-docs` | prime | With no `docs/README.md`, uses the D³ default and cites no doc that doesn't exist. |
+| `prime-diff-picks-cited-docs` | prime | `--diff` loads the doc that cites the changed file, not an unrelated one. |
+| `answer-from-docs` | prime | A "how does X work and why" question is answered from the doc — including the why the code can't show. |
+| `capture-bug-routing` | capture | A bug goes to a dated, immutable audit; files confirmed before writing; ADRs untouched. |
+| `capture-plan-acceptance` | capture | A plan gets numbered Given/When/Then acceptance criteria and invents no product facts. |
+| `capture-adr-numbering` | capture | With ADRs 0001, 0002, 0005, the next is 0006. |
+| `capture-adr-supersede` | capture | Replacing a decision writes a new ADR; the old one gets only the `superseded-by` pointer. |
+| `capture-incident-action-items` | capture | Blameless postmortem with owned action items; owners asked for, not invented. |
+| `spec-no-invention` | spec | FR/SC ids and prioritized stories; price, quotas and metrics become `[NEEDS CLARIFICATION]`. |
+| `review-flags-rule-violation` | review | A diff that contradicts a business rule is caught, quoted, and flagged as undocumented work — read-only. |
+| `check-runs-the-linter` | check | Runs `check.mjs` and reports its findings instead of eyeballing files. |
 
-Each case is hermetic: the `files:` block scaffolds a tiny repo (a `CLAUDE.md` router + a
-`docs/` corpus) so the skill has something real to read. `criteria` are AND-ed; graders in
-`graders/*.md` score the judgment calls.
+Write tools are allowed in the write-verb cases on purpose: a skill that writes without asking would
+then actually write, and the grader fails it.
 
 ## Adding a case
 
-Create `evals/<name>/case.yaml` with `name`, `prompt`, `criteria`, and (for a skill that
-reads files) a `files:` fixture. Add an LLM-rubric grader in `graders/*.md` when a
-criterion needs judgment rather than a string match.
+Create `evals/<name>/case.yaml` with `schema_version: "1.1"`, `name`, `execution.prompt`, and an `llm`
+grader whose `criteria` say what PASS means; put the workspace files in `fixture.sh` and point
+`context.scaffold_script` at it. Extra rubric graders go in `graders/*.md` (frontmatter `type: llm`).

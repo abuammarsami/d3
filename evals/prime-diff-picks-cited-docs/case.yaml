@@ -1,0 +1,31 @@
+schema_version: '1.1'
+name: prime-diff-picks-cited-docs
+description: Given that only src/billing/invoice.ts changed, prime --diff must load the doc that cites it and leave
+  out the doc about an unrelated module.
+tags:
+- prime
+- diff
+- context-economy
+runs: 3
+context:
+  scaffold_script: fixture.sh
+execution:
+  prompt: I changed src/billing/invoice.ts on this branch (there is no git history in this sandbox — treat that
+    file as the whole diff). Use /d3:prime --diff to load the docs I need before I continue.
+  max_turns: 30
+  timeout_seconds: 300
+  allowed_tools:
+  - Skill
+  - Read
+  - Glob
+  - Grep
+  - Bash
+graders:
+- name: criteria
+  type: llm
+  criteria: |-
+    PASS only if ALL of the following hold; otherwise FAIL.
+
+    1. It loads docs/reference/business-rules/billing.md and states its load-bearing rule (15% VAT, rounded).
+    2. It does NOT load or summarize docs/reference/business-rules/ads.md as relevant.
+    3. It returns a compact context pack (a line per doc), not full file contents.

@@ -1,15 +1,27 @@
-name: Help — bare invocation prints usage and stops
-description: >
-  Invoked with no verb, the skill must print its Usage block and stop — no repo scan,
-  no file writes. This is the guard that makes an accidental auto-trigger cheap.
-tags: [help, safety]
+schema_version: '1.1'
+name: help
+description: Invoked with no verb, the skill must print its Usage block and stop — no repo scan, no file writes.
+  This is the guard that makes an accidental auto-trigger cheap.
+tags:
+- help
+- safety
 runs: 2
-timeout: 30
+execution:
+  prompt: /d3:d3
+  max_turns: 30
+  timeout_seconds: 240
+  allowed_tools:
+  - Skill
+  - Read
+  - Glob
+  - Grep
+  - Bash
+graders:
+- name: criteria
+  type: llm
+  criteria: |-
+    PASS only if ALL of the following hold; otherwise FAIL.
 
-prompt: |
-  /d3:d3
-
-criteria:
-  - The response shows the usage / command list, including the verbs prime, capture, and status.
-  - It does NOT read, grep, or scan repository files.
-  - It does NOT create, edit, or write any file.
+    1. The response shows the usage / command list, including the verbs prime, capture, and status.
+    2. It does NOT read, grep, or scan repository files.
+    3. It does NOT create, edit, or write any file.

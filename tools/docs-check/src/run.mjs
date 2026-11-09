@@ -13,11 +13,12 @@ import {
  * links and Mermaid also cover every CLAUDE.md, AGENTS.md and README.md, and Markdown under database/.
  */
 export function scope(repo, vocabulary) {
-  const docs = repo.markdownUnder('docs/');
+  const ignored = f => vocabulary.ignorePaths.some(p => f.startsWith(p));
+  const docs = repo.markdownUnder('docs/').filter(f => !ignored(f));
   const withFrontmatter = docs.filter(f => !vocabulary.exemptPaths.some(p => f.startsWith(p)));
-  const contracts = [...repo.tracked].filter(f => /(^|\/)(CLAUDE|AGENTS)\.md$/.test(f) && !f.startsWith('docs/'));
+  const contracts = [...repo.tracked].filter(f => /(^|\/)(CLAUDE|AGENTS)\.md$/.test(f) && !f.startsWith('docs/') && !ignored(f));
   const outside = [...repo.tracked].filter(f => f.endsWith('.md') && !f.startsWith('docs/') && !contracts.includes(f)
-    && !/(^|\/)node_modules\//.test(f) && (f.startsWith('database/') || f === 'README.md' || f.endsWith('/README.md')));
+    && !/(^|\/)node_modules\//.test(f) && !ignored(f) && (f.startsWith('database/') || f === 'README.md' || f.endsWith('/README.md')));
   return { frontmatter: withFrontmatter, content: [...docs, ...contracts.sort(), ...outside.sort()] };
 }
 

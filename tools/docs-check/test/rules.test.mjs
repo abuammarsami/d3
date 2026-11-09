@@ -118,6 +118,7 @@ test('clarify: an open question blocks only a settled doc', async () => {
   const problems = await check({
     'docs/specs/001-a/spec.md': fm({ ...base, type: 'spec', status: 'draft' }, '# A\n[NEEDS CLARIFICATION: who pays?]\n'),
     'docs/specs/002-b/spec.md': fm({ ...base, type: 'spec', status: 'active' }, '# B\n[NEEDS CLARIFICATION: who pays?]\n'),
+    'docs/specs/003-c/spec.md': fm({ ...base, type: 'spec', status: 'active' }, '# C\nOpen questions are written `[NEEDS CLARIFICATION: …]`.\n'),
   });
   const clarify = problems.filter(p => p.includes(':clarify:'));
   assert.equal(clarify.length, 1);

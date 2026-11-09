@@ -58,7 +58,8 @@ export function checkClarify(doc, fm) {
   if (!SETTLED.has(fm?.status)) return [];
   const problems = [];
   forEachProseLine(doc, (text, no) => {
-    if (text.includes('[NEEDS CLARIFICATION')) problems.push({ line: no, message: `open [NEEDS CLARIFICATION] in a doc whose status is ${fm.status}; answer it or move the doc back to draft` });
+    // A marker inside a code span is an example of the syntax, not an open question.
+    if (text.replace(/(`+)[^`]*?\1/g, '').includes('[NEEDS CLARIFICATION')) problems.push({ line: no, message: `open [NEEDS CLARIFICATION] in a doc whose status is ${fm.status}; answer it or move the doc back to draft` });
   });
   return problems;
 }

@@ -1,5 +1,5 @@
 ---
-model: haiku
+type: llm
 ---
 
 # Grader — prime produced a useful, compact context pack

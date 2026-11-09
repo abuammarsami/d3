@@ -1,28 +1,31 @@
-name: Prime — graceful fallback when there is no docs/ yet
-description: >
-  In a repo with source and a CLAUDE.md but NO docs/README.md, `prime` must fall back to
-  the standard six-bucket taxonomy and never cite doc paths that don't exist.
-tags: [prime, fallback, anti-hallucination]
+schema_version: '1.1'
+name: prime-fallback-no-docs
+description: In a repo with source and a CLAUDE.md but NO docs/README.md, `prime` must fall back to the standard
+  six-bucket taxonomy and never cite doc paths that don't exist.
+tags:
+- prime
+- fallback
+- anti-hallucination
 runs: 3
-timeout: 90
+context:
+  scaffold_script: fixture.sh
+execution:
+  prompt: Prime the context for adding rate limiting to this API. Use /d3:prime if available.
+  max_turns: 30
+  timeout_seconds: 240
+  allowed_tools:
+  - Skill
+  - Read
+  - Glob
+  - Grep
+  - Bash
+graders:
+- name: criteria
+  type: llm
+  criteria: |-
+    PASS only if ALL of the following hold; otherwise FAIL.
 
-files:
-  - path: CLAUDE.md
-    content: |
-      # Widgets API — Agent Contract
-      A small .NET service. No docs/ folder yet.
-  - path: src/Program.cs
-    content: |
-      var builder = WebApplication.CreateBuilder(args);
-      var app = builder.Build();
-      app.MapGet("/health", () => "ok");
-      app.Run();
-
-prompt: |
-  Prime the context for adding rate limiting to this API. Use /d3:d3 prime if available.
-
-criteria:
-  - It recognizes there is no docs/README.md and says it is using the standard six-bucket fallback taxonomy.
-  - It does NOT claim to load, or quote content from, any doc file — because none exist in this repo.
-  - It loads the root CLAUDE.md (the one thing that does exist) and is honest that the corpus is empty.
-  - It suggests where the work would be documented (e.g. opening a plan via capture --plan) instead of inventing docs.
+    1. It recognizes there is no docs/README.md and says it is using the D³ default taxonomy (and may suggest /d3:init).
+    2. It does NOT claim to load, or quote content from, any doc file — because none exist in this repo.
+    3. It loads the root CLAUDE.md (the one thing that does exist) and is honest that the corpus is empty.
+    4. It suggests where the work would be documented (e.g. opening a plan via capture --plan) instead of inventing docs.

@@ -25,8 +25,12 @@ Shared rules, relative to this skill's directory — read the first three before
 4. **Template** — copy the repo's template (`docs/templates/<kind>.md`, or the one `docs/README.md`
    names). Without one, use the plugin's at `../../templates/docs/<kind>.md`. Keep its headings,
    replace every placeholder, delete the italic guidance.
-5. **Confirm** — show the destination path and the full list of files you will create or modify
-   (the doc plus every follow-through file). Write only after the user says yes.
+5. **Confirm** — show the destination path, the full list of files you will create or modify (the
+   doc plus every follow-through file), and the doc's load-bearing content **in its final form** so
+   the user approves the substance, not just file names: a plan's acceptance criteria written out as
+   `AC-n` Given / When / Then; an incident's Action items table (Action · Type · Owner · Ticket); an
+   ADR's decision and the options it beat; an audit's symptom and root cause. Write only after the
+   user says yes.
 6. **Write, then follow through** — `../../shared/follow-through.md`, including the docs-check loop.
 7. **Report** — destination, follow-through files touched, docs-check result; for an ADR the number
    assigned and anything superseded.

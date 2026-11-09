@@ -1,80 +1,127 @@
 ![Document-Driven Development (D³)](assets/banner.svg)
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
-[![version](https://img.shields.io/badge/version-1.0.1-5fc9bf)](CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-2.0.0-5fc9bf)](CHANGELOG.md)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-9d8cff)](https://docs.claude.com/en/docs/claude-code)
-[![skills](https://img.shields.io/badge/skills-prime%20·%20capture-5fc9bf)](#usage)
-[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](#contributing)
+[![AGENTS.md](https://img.shields.io/badge/AGENTS.md-any%20agent-5fc9bf)](https://agents.md)
+[![docs-check](https://img.shields.io/badge/docs--check-zero%20deps-brightgreen)](tools/docs-check/README.md)
 
-> **Documentation isn't a byproduct of the work — it's the interface your AI works through.**
+> **The repo holds the docs, so neither the people nor the agents have to guess from the code.**
 
-Most AI coding sessions start cold. The agent knows the *code* but not the *why* — the
-business rules, the decisions already made, the bug you root-caused last month. That
-knowledge lives in one person's head and evaporates between sessions. **D³** is a two-verb
-workflow that keeps it in the repo, in a shape the agent reads on the next task: **`prime`**
-loads the few docs that matter *before* you build, and **`capture`** files what you learned
-into its one canonical home *after* — so nothing is ever learned twice.
+Code says *what* the system does. It does not say **why** a rule exists, **which decisions** are
+settled, **what broke last time**, or **what was agreed** for the feature being built. On most
+teams that lives in a few people's heads and in chat history. An AI agent starting a session, or a
+new engineer starting a job, has to reverse-engineer it from the code — slowly, and often wrong.
 
----
+**D³** makes the repo hold it, in one shared system:
 
-## Example session
+- **Typed homes** — every fact has exactly one place: a decision is an ADR, a shipped bug is a
+  dated audit, a rule is a business-rule page, how a module works *today* is its module reference.
+- **A loop** — `prime` loads the few docs a task needs before work starts; `capture` files what was
+  learned after; `review` checks a PR against what was agreed; `check` keeps it all true in CI.
+- **Plain Markdown for everyone** — people read it on GitHub, any agent reads it through
+  `AGENTS.md`, and the linter runs with no AI at all.
 
-> *Illustrative* — a realistic transcript of the loop on a real feature. Paths and docs
-> are discovered from the repo at runtime.
-
-```text
-> /d3:d3 prime "add tier-based ad limits"
-
-Context pack for: add tier-based ad limits
-Taxonomy:   docs/README.md found (repo's own six-bucket layout)
-CLAUDE.md:  root + src/modules/ads/CLAUDE.md   (module rules override general ones)
-Docs loaded:
-  - docs/reference/business-rules/membership.md   [active]   — Free=3 active ads, Silver=15,
-                                                               Gold=unlimited; boost resets weekly
-  - docs/plans/ads/posting-limits/README.md        [active]  — the plan this task executes
-  - docs/architecture/decisions/adr-0012-entitlement-checks.md [accepted]
-                                                              — entitlements gate at the command handler, not the UI
-Graph:      graphify query "what enforces AdLimit" → AdQuotaService.Guard()
-Last session: wired MembershipTier enum into the ad-create validator (.remember/recent.md)
-Open TODOs:  none for ads/ in CLAUDE.md Progress
-
-Proceeding with this context in hand…
-```
-
-```text
-> /d3:d3 capture --bug "Gold users hit the Free 3-ad cap because tier defaulted to Free on a null claim"
-
-Filed → docs/reference/audits/2026-07-13-gold-tier-defaults-to-free.md  (dated · IMMUTABLE)
-  Symptom (verbatim), root cause at AdQuotaService.cs:74, fix + files changed,
-  what was NOT touched (the enum), numbered verification steps.
-
-Follow-through (same change set):
-  ✓ docs/reference/audits/README.md        — indexed the new audit row
-  ✓ docs/reference/business-rules/membership.md — added the null-claim caveat, cited to :74
-  ✓ CLAUDE.md Progress                     — logged the fix
-  ✓ .remember/today-2026-07-13.md          — one-line session note
-  ↻ suggest: graphify update .             — refresh the knowledge graph
-
-No undocumented work. The next `prime` for anything tier-related will surface this.
-```
+It is the practice big engineering organizations rely on — design docs with acceptance criteria,
+ADRs, blameless postmortems, PR templates, docs CI — packaged so a solo builder gets it in one
+command and an experienced team gets it without the ceremony.
 
 ---
 
-## Features
+## The loop
 
-- **`prime` = context economy** — loads the 3–6 docs that actually matter (root + module
-  `CLAUDE.md`, the governing ADR, the business rule, the relevant plan, last session's note)
-  as a focused pack, not a dump.
-- **`capture` = one home per fact** — every kind of knowledge routes to exactly one
-  canonical location by document type. No duplicates, no "where did we write that down?"
-- **Repo-agnostic auto-discovery** — reads your `docs/README.md` + `CLAUDE.md` at runtime to
-  learn *your* taxonomy; falls back to a standard six-bucket layout when there isn't one yet.
-- **Immutable ADRs & audits** — decisions are superseded, never rewritten; bugs are dated
-  files you never edit. The history *is* the record.
-- **No-undocumented-work follow-through** — after a capture it updates the folder index, the
-  plans roadmap, the progress tracker, and the session log automatically.
-- **Zero config** — it's a skill. Install it and invoke it. Optional integrations (a
-  knowledge graph, a `.remember` session log, Cursor rules) are used only when present.
+```mermaid
+flowchart LR
+  init["/d3:init<br/>set up docs, AGENTS.md,<br/>PR template, CI"] --> prime
+  prime["/d3:prime<br/>load the 3–6 docs<br/>the task needs"] --> build["build<br/>(you + your agent)"]
+  build --> capture["/d3:capture<br/>file what was learned<br/>in its one home"]
+  capture --> check["/d3:check<br/>linter: links, vocabulary,<br/>drift, coverage"]
+  check --> review["/d3:review<br/>PR vs plan, ADRs, rules;<br/>undocumented work"]
+  review --> prime
+  spec["/d3:spec<br/>optional PRD"] -.-> capture
+```
+
+| Command | What it does |
+|---|---|
+| `/d3:init [--backfill]` | Sets up `docs/` (taxonomy + machine-read vocabulary), templates, a lean `AGENTS.md` that `CLAUDE.md` imports, a PR template, the docs linter and its CI. **Dry run first, never overwrites**, and only *reports* on a repo that already has a docs system. `--backfill` drafts module references and *proposed* ADRs from existing code. |
+| `/d3:prime <task>` | Loads the plan, ADRs, rules, module reference and flow that govern the task as a **compact context pack** — a line per doc, not a dump. `--diff [base]` picks the docs that cite the files a branch changed. |
+| `/d3:capture --<kind> <what>` | Files new knowledge in its canonical home with the right template, then does the follow-through (indexes, the current-state doc, the docs check). **Lists the files and asks before writing.** |
+| `/d3:spec <feature>` | Optional product spec (PRD): problem, users, non-goals, prioritized stories with Given/When/Then, `FR-###`, `SC-###`, open questions marked `[NEEDS CLARIFICATION]` — never guessed. |
+| `/d3:check [--drift] [--fix]` | Runs the linter and turns its findings into fixes. |
+| `/d3:review [PR#\|branch]` | Read-only: which acceptance criteria the change satisfies, which ADR or rule it contradicts, what behaviour changed with no doc updated, which citations it broke. |
+| `/d3:status` | What is in flight, overdue for review, undocumented, or not yet graduated. |
+
+`/d3:d3` prints the help; `/d3:d3 <verb>` routes to the verbs above.
+
+### Example: the loop catching a real mistake
+
+```text
+> /d3:review main
+
+Review of branch feat/unlimited against docs (base: main)
+Plan: docs/plans/ads/posting-limits/README.md
+Acceptance:   AC-2 ✗ "Given a Gold user, when they post, then the Gold quota applies" — a paid Gold user now skips it
+Decisions:    ✗ membership.md:15 — `if (user.paid) return true` (src/ads/QuotaService.js:3) contradicts
+                **Payment ≠ activation: the tier is granted by admin approval, not by paying.**
+Undocumented: paid users unlimited — no doc in the diff changed; the method rename guard → check
+              breaks the citation in membership.md (docs-check drift)
+Verdict: needs changes
+Follow-ups:   intended? /d3:capture --decision "Paid users post without a monthly limit", then update the rule
+```
+
+*(From a smoke test of this release; trimmed.)*
+
+---
+
+## What goes where
+
+| Kind of knowledge | Home | Capture with |
+|---|---|---|
+| Future work, with numbered acceptance criteria | `docs/plans/{module}/{kebab}/README.md` | `--plan` |
+| Product spec (optional PRD) | `docs/specs/NNN-{kebab}/spec.md` | `/d3:spec` |
+| A hard-to-reverse decision | `docs/architecture/decisions/adr-NNNN-{kebab}.md` (MADR) | `--decision` |
+| How the system fits / how a request moves | `docs/architecture/views/`, `docs/architecture/flows/` | `--architecture`, `--flow` |
+| How a module works **today** | `docs/reference/modules/{module}.md` | `--module` |
+| A domain, pricing or entitlement rule | `docs/reference/business-rules/{domain}.md` | `--rule` |
+| A rule where one wrong edit costs money | `docs/reference/algorithms/` | `--algorithm` |
+| Domain model, data model, threat model | `docs/reference/{domain,generated/data-model,security/threat-models}/` | `--domain`, `--data-model`, `--threat` |
+| A shipped bug — dated, immutable | `docs/reference/audits/YYYY-MM-DD-{kebab}.md` | `--bug` |
+| A production incident — blameless, owned action items | `docs/reference/incidents/` | `--incident` |
+| Procedures, how-tos, onboarding | `docs/runbooks/`, `docs/guides/`, `docs/guides/tutorials/` | `--runbook`, `--guide`, `--tutorial` |
+| A word the code uses | `docs/reference/glossary.md` | `--term` |
+
+Your repo's own `docs/README.md` always wins over these defaults.
+
+**Plans graduate.** When a plan ships, what outlives it moves to its permanent home (the module
+reference, the rule, the flow), which links back. Nobody should have to read a stack of old plans —
+or the code — to learn how the system works today.
+
+---
+
+## The docs check
+
+A zero-dependency Node script (`tools/docs-check/check.mjs`, Node 18+) that `/d3:init` copies into
+your repo and wires into CI. It needs no AI and no npm install.
+
+- **Errors** (fail CI): frontmatter outside the vocabulary, broken links and anchors, Mermaid that
+  does not parse, a reused ADR or spec number, an open `[NEEDS CLARIFICATION]` in a settled doc.
+- **Warnings** (configurable): live plans without numbered acceptance criteria, **code citations
+  that drifted** (`path#Symbol` / `path:line` whose file, lines or symbol are gone — or, with a lock,
+  whose code changed), screenshots under `docs/`, incident action items without an owner,
+  undocumented modules, plans that shipped without graduating.
+- **Helpers**: `review-due`, `cites <path>` (which docs describe this code?), `drift --changed <base>`,
+  `lock`, `--json`.
+
+Use it as a GitHub Action without vendoring:
+
+```yaml
+- uses: actions/checkout@v4
+- uses: abuammarsami/d3@v2
+  with:
+    args: --strict   # optional
+```
+
+Full reference: [tools/docs-check/README.md](tools/docs-check/README.md).
 
 ---
 
@@ -85,118 +132,68 @@ No undocumented work. The next `prime` for anything tier-related will surface th
 /plugin install d3@ammar-skills
 ```
 
-Reload plugins (`/reload-plugins`) if prompted.
+Then, in a repo: `/d3:init`. For other agents (Codex, Cursor, Copilot, Gemini…) the result is plain
+files they already read: `AGENTS.md` and `docs/`.
 
 ---
 
-## Usage
+## Why, and how it compares
 
-Installed plugin skills are namespaced by plugin name, so the command is **`/d3:d3`**:
+Context engineering beats prompt engineering: the win is the right durable knowledge in front of the
+model at the right moment. Read the writeup —
+**[Document-Driven Development (D³): Docs Are the Interface Your AI Works Through](https://ammar-portfolio-zeta.vercel.app/deep-dives/document-driven-development)**.
 
-```text
-/d3:d3 prime <task or feature>    # load the right docs for this task → a context pack
-/d3:d3 capture <what happened>    # file a new rule / decision / bug in its canonical home
-/d3:d3 status                     # what's active/draft across docs/plans (+ open TODOs)
-/d3:d3                            # help
-```
+| | Spec-driven tools (Spec Kit, Kiro, BMAD) | Memory banks / generated wikis | **D³** |
+|---|---|---|---|
+| Scope | One feature, forward-looking | The whole repo | The whole repo, for its lifetime |
+| Knows *why* (decisions, rules, past bugs) | Inside the feature's spec | No — generated from code | Yes — ADRs, rules, audits, incidents |
+| Stays true after the feature ships | No | Regenerated | `capture` + graduation + drift check |
+| Enforced in CI without AI | No | No | Yes |
+| Works with any agent | Mostly | Per tool | Yes (`AGENTS.md` + Markdown) |
 
-> The bare `/d3` works only if you add it as a personal or project skill named `d3` (not via
-> the plugin). Through the marketplace plugin, always use the namespaced `/d3:d3`.
+They combine well: a spec-driven tool can drive a feature while D³ keeps the repo's knowledge true,
+and behaviour guidelines such as the Karpathy-inspired `CLAUDE.md` shape *how* the agent works while
+D³ supplies *what is true* about the system.
 
-`capture` routes by the *kind* of knowledge — pass a flag, or let it infer (it asks when
-genuinely ambiguous):
-
-| Flag | Canonical home | What it is |
-|------|----------------|-----------|
-| `--plan` | `docs/plans/{module}/…` | a future design, written to be executed |
-| `--decision` | `docs/architecture/decisions/adr-NNNN-…` | an immutable ADR (superseded, never edited) |
-| `--bug` | `docs/reference/audits/YYYY-MM-DD-…` | a dated, immutable audit: symptom → root cause → fix → verification |
-| `--incident` | `docs/reference/incidents/…` | a blameless post-mortem |
-| `--rule` | `docs/reference/business-rules/…` | a domain rule, cited to `file:line` |
-| `--module` | `docs/reference/modules/…` | a current-state reference ("how it works today") |
-
----
-
-## How it works
-
-The docs only help if the agent actually reads them. D³ pairs a durable, type-partitioned
-doc corpus with the wiring that delivers it into context at the right moment — a router
-`CLAUDE.md` that links out to `docs/`, module files that auto-load per subtree, an optional
-knowledge graph queried instead of grepped. The corpus becomes an **interface**, not an
-archive. Every fact keys to one document type:
-
-| Bucket | Holds |
-|--------|-------|
-| `docs/architecture/decisions/` | ADRs — immutable decision records |
-| `docs/plans/{module}/` | feature / migration / refactor designs |
-| `docs/reference/business-rules/` | money · tiers · entitlements, cited to `file:line` |
-| `docs/reference/audits/` | dated, immutable bug/parity records |
-| `docs/reference/incidents/` · `modules/` | post-mortems · current-state references |
-| `docs/runbooks/` · `guides/` | operational procedures · developer how-tos |
-
-`prime` reads these homes back into context; `capture` writes new knowledge where `prime`
-will find it. The loop closes.
-
----
-
-## Why / philosophy
-
-Context engineering beats prompt engineering: the win isn't a cleverer prompt, it's the
-right durable knowledge in the model's context at the right moment. Read the full writeup —
-**[Document-Driven Development (D³): Docs Are the Interface Your AI Works Through](https://ammar-portfolio-zeta.vercel.app/deep-dives/document-driven-development)** —
-for the methodology, the taxonomy, and the loop, with real examples from a production .NET
-marketplace.
+**Deliberately not here:** generating code from specs, a cast of role personas, mandatory heavy
+ceremony for small changes (a one-PR plan is five short sections), and LLM-written project overviews in
+`AGENTS.md` — a 2026 study found those make agents *worse*, while human-written conventions and
+commands help.
 
 ---
 
 ## FAQ
 
-**Does it work in any repo?**
-Yes. On every run it discovers your repo's actual `docs/` taxonomy from `docs/README.md` +
-`CLAUDE.md`. It never hardcodes one project's paths.
+**Does it change my repo without asking?** No. Write verbs list every file and wait for a yes.
+`init` is a dry run until you confirm, never overwrites a file, and on a repo that already has a docs
+system it only reports what is missing.
 
-**What if I don't have a `docs/` folder yet?**
-It falls back to a standard six-bucket layout and creates folders/README indexes on the
-first `capture`. You can start empty and let the corpus grow.
+**My team already has docs and a different layout.** Put a `<!-- docs-check:vocabulary -->` block in
+your `docs/README.md` (or keep the one you have): D³ and the linter follow it.
 
-**Does it need graphify (or any other tool)?**
-No. A knowledge graph, a `.remember` session log, and Cursor rules are *optional* — used
-only when they already exist in your repo. D³ works fully without them.
+**Do we need a PRD for everything?** No. A plan with numbered acceptance criteria is the default.
+`/d3:spec` is for product questions that need their own review.
 
-**Will it edit my files without asking?**
-`capture` proposes the destination and follow-through, and asks before writing when the
-routing is ambiguous. It **never** edits an immutable ADR or a dated audit — to revise an
-ADR it writes a new one that `supersedes:` it; to re-audit it writes a new dated file.
+**Is `prime` dumping all my docs into context?** No — 3–6 docs, a line each. That is the point.
 
-**Is `prime` just dumping all my docs into context?**
-No — that's the whole point. It loads the 3–6 docs that matter for *this* task and
-summarizes each in a line. A focused pack, not a dump.
+**Does it need graphify, a session log, Cursor rules?** No. They are used only when they already
+exist ([shared/integrations.md](shared/integrations.md)).
 
 ---
 
 ## Testing
 
-The skill ships with a scored eval suite in [`evals/`](evals/) — hermetic cases (each
-scaffolds a tiny repo with a `docs/` corpus) that check `prime` surfaces the right context,
-`capture` routes to the correct home and confirms before writing, and the fallback path
-never hallucinates docs. Run them with Claude Code's eval harness:
-
-```text
-claude plugin eval d3@ammar-skills --ablation with-without
-```
-
-`--ablation with-without` scores each task **with** and **without** the skill and reports
-the delta. (`claude plugin eval` is currently in early access.) See [`evals/README.md`](evals/README.md).
+- `node --test tools/docs-check/test/*.test.mjs tools/init/test/*.test.mjs` — the linter and the
+  scaffold, each rule proven both ways.
+- `evals/` — behaviour cases for every verb (help, init safety, prime, prime --diff, capture routing,
+  ADR numbering and supersede, incidents, spec, review, check, answering from docs), run with
+  `claude plugin eval . --ablation with-without` to see the score with and without the plugin.
 
 ## Contributing
 
-Issues and PRs welcome — bug reports, taxonomy ideas, and integration hooks especially. Open
-an issue to discuss anything larger than a fix.
+Issues and PRs welcome. This repo dogfoods itself: changes come with the doc that describes them, and
+CI runs the docs check.
 
 ## License
 
 [MIT](LICENSE) © Md. Abu Ammar
-
----
-
-⭐ **Star this repo if it saves you a cold start.**

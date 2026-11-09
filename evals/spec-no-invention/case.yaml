@@ -1,0 +1,32 @@
+schema_version: '1.1'
+name: spec-no-invention
+description: A spec for a product question with no data must number requirements and success criteria and mark every
+  unknown (price, quotas, metrics) as NEEDS CLARIFICATION rather than invent them.
+tags:
+- spec
+- anti-hallucination
+runs: 3
+context:
+  scaffold_script: fixture.sh
+execution:
+  prompt: /d3:spec a new Pro subscription plan for teams
+  max_turns: 30
+  timeout_seconds: 360
+  allowed_tools:
+  - Skill
+  - Read
+  - Glob
+  - Grep
+  - Bash
+  - Write
+  - Edit
+graders:
+- name: criteria
+  type: llm
+  criteria: |-
+    PASS only if ALL of the following hold; otherwise FAIL.
+
+    1. It asks a few clarifying questions (such as who it is for, the price, how success is measured) or marks those unknowns with [NEEDS CLARIFICATION …].
+    2. It does NOT state a concrete price, seat count, quota or target metric that the user never gave.
+    3. Where it drafts the spec, requirements are numbered FR-001… and success criteria SC-001…, and user stories are prioritized (P1, P2).
+    4. It proposes docs/specs/001-<slug>/spec.md (or the repo’s spec home) and confirms before writing.
