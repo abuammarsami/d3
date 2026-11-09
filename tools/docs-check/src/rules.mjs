@@ -11,10 +11,11 @@ const SETTLED = new Set(['active', 'accepted', 'implemented']);
 const BINARY = /\.(png|jpe?g|gif|webp|bmp|tiff?|svg|drawio|vsdx?|psd|ai|sketch|fig|mp4|mov|webm|zip)$/i;
 
 /** ADR numbers and spec folder numbers are unique (an immutable record must never share a number). */
-export function checkNumbering(repo, isTemplate) {
+export function checkNumbering(repo, isTemplate, ignored = () => false) {
   const problems = [];
   const seen = new Map();
   for (const file of repo.tracked) {
+    if (ignored(file)) continue;
     let key = null;
     const adr = /^(.*\/)?adr-(\d{4})-[^/]*\.md$/.exec(file);
     if (adr && !isTemplate(file)) key = `${adr[1] ?? ''}adr-${adr[2]}`;
@@ -93,6 +94,7 @@ export function checkActions(doc, fm) {
     const cells = line.trim().replace(/^\||\|$/g, '').split('|').map(c => c.trim());
     if (ownerCol < 0) {
       ownerCol = cells.findIndex(c => /^owner$/i.test(c.replace(/\*/g, '')));
+      if (ownerCol < 0) return [{ line: i + 1, message: 'Action items table has no Owner column (Action | Type | Owner | Ticket)' }];
       continue;
     }
     if (cells.every(c => /^:?-+:?$/.test(c))) continue;
@@ -111,7 +113,7 @@ export function citationsOf(file, doc, repo, aliases) {
   const CITE = /^@?(?:\.\/)?([\w@/.-]*[\w-]\.[A-Za-z0-9]{1,8})(?::(\d+)(?:-(\d+))?|#([A-Za-z_$][\w$]*(?:(?:\.|::)[A-Za-z_$][\w$]*)*))$/;
   for (const span of doc.codeSpans) {
     const m = CITE.exec(span.text);
-    if (!m || /\.md$/i.test(m[1])) continue;
+    if (!m || /\.md$/i.test(m[1]) || /\.\d+$/.test(m[1])) continue; // an IP:port is not a file
     out.push({ raw: span.text, line: span.line, path: m[1], from: m[2] && Number(m[2]), to: m[3] && Number(m[3]), symbol: m[4] });
   }
   for (const link of doc.links) {
@@ -119,6 +121,7 @@ export function citationsOf(file, doc, repo, aliases) {
     const r = resolveTarget(file, link.href);
     if (!r || r.outside || /\.md$/i.test(r.target) || !/\.[A-Za-z0-9]{1,8}$/.test(r.target)) continue;
     const l = /^L(\d+)(?:-L(\d+))?$/.exec(r.fragment ?? '');
+    if (!repo.isFile(r.target)) continue; // missing file or a folder: the links check reports it
     out.push({ raw: link.href, line: link.line, path: r.target, resolved: r.target, from: l && Number(l[1]), to: l?.[2] && Number(l[2]), link: true });
   }
   for (const c of out) if (!c.resolved) c.resolved = resolveCited(c.path, file, repo, aliases);
@@ -153,14 +156,18 @@ export function checkDrift(file, doc, repo, { lock, changed, aliases } = {}) {
   const problems = [];
   for (const c of citationsOf(file, doc, repo, aliases)) {
     if (c.resolved && typeof c.resolved === 'object') continue; // ambiguous file name: cannot judge
-    if (changed && !(c.resolved && changed.has(c.resolved))) continue;
+    if (!c.resolved && !c.path.includes('/')) continue; // a bare name nothing matches: a host, or another repo's file
+    if (changed && !(c.resolved ? changed.has(c.resolved) : [...changed].some(f => f === c.path || f.endsWith(`/${c.path}`)))) continue;
     if (!c.resolved) {
-      if (c.link) continue; // the links check already reports a missing link target
       problems.push({ line: c.line, message: `cites \`${c.raw}\`, but ${c.path} is not a file in this repository (moved or deleted?)` });
       continue;
     }
     const lines = repo.read(c.resolved).split('\n');
     const total = lines.length - (lines.at(-1) === '' ? 1 : 0);
+    if (c.from && c.to != null && c.to < c.from) {
+      problems.push({ line: c.line, message: `cites \`${c.raw}\`, but the line range is reversed` });
+      continue;
+    }
     if (c.from && (c.from > total || (c.to && c.to > total))) {
       problems.push({ line: c.line, message: `cites \`${c.raw}\`, but ${c.resolved} has only ${total} lines` });
       continue;
@@ -202,7 +209,8 @@ export function fingerprint(c, lines) {
 /** Images, binary diagrams and media stay out of docs/; evidence goes in the PR. */
 export function checkEvidence(repo, vocabulary) {
   return [...repo.tracked]
-    .filter(f => f.startsWith('docs/') && BINARY.test(f) && !vocabulary.evidenceAllow.some(p => f.startsWith(p)))
+    .filter(f => f.startsWith('docs/') && BINARY.test(f) && !vocabulary.evidenceAllow.some(p => f.startsWith(p))
+      && !vocabulary.ignorePaths.some(p => f.startsWith(p)))
     .sort()
     .map(file => ({ file, line: 1, message: 'binary or image file under docs/: put screenshots and evidence in the PR description, diagrams in Mermaid (or allow the folder with evidence-allow)' }));
 }

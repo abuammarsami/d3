@@ -4,8 +4,9 @@
 name: docs-check
 
 on:
+  # Every pull request, not only ones that touch Markdown: renaming or deleting cited code is exactly
+  # what breaks a doc, and that happens in code-only changes.
   pull_request:
-    paths: ['**/*.md', 'tools/docs-check/**']
   push:
     branches: [main]
 

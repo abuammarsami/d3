@@ -1,5 +1,8 @@
 import path from 'node:path';
 import { lookup } from 'node:dns/promises';
+import { lookup as dnsLookup } from 'node:dns';
+import http from 'node:http';
+import https from 'node:https';
 import { isIP } from 'node:net';
 
 const SCHEME = /^[a-z][a-z0-9+.-]*:/i;
@@ -96,14 +99,45 @@ export async function checkExternal(urls, { timeoutMs = 10000, concurrency = 8 }
 async function safeFetch(start, method, timeoutMs) {
   let url = start;
   for (let hop = 0; hop < 5; hop++) {
-    await assertPublic(url);
-    const res = await fetch(url, { method, redirect: 'manual', signal: AbortSignal.timeout(timeoutMs) });
-    if (res.status < 300 || res.status >= 400 || !res.headers.get('location')) return res;
-    url = new URL(res.headers.get('location'), url).href;
+    const res = await request(url, method, timeoutMs);
+    if (res.status < 300 || res.status >= 400 || !res.location) return res;
+    url = new URL(res.location, url).href;
   }
   throw new Error('too many redirects');
 }
 
+/**
+ * One request whose connection may only go to a public address. The check runs inside the socket's
+ * own DNS lookup, so the address checked is the address connected to (no DNS-rebinding gap).
+ */
+function request(url, method, timeoutMs) {
+  const u = new URL(url);
+  if (u.protocol !== 'http:' && u.protocol !== 'https:') return Promise.reject(new Error(`refused: ${u.protocol} is not http(s)`));
+  const host = u.hostname.replace(/^\[|\]$/g, '');
+  if (isIP(host) && isPrivateAddress(host)) return Promise.reject(new Error(`refused: ${u.hostname} is a private address`));
+  const lib = u.protocol === 'https:' ? https : http;
+  return new Promise((resolve, reject) => {
+    const req = lib.request(u, { method, lookup: publicLookup, timeout: timeoutMs, headers: { 'user-agent': 'd3-docs-check' } }, res => {
+      res.resume();
+      resolve({ status: res.statusCode, location: res.headers.location });
+    });
+    req.on('timeout', () => req.destroy(Object.assign(new Error('timeout'), { name: 'TimeoutError' })));
+    req.on('error', reject);
+    req.end();
+  });
+}
+
+function publicLookup(hostname, options, callback) {
+  dnsLookup(hostname, { ...options, all: true }, (err, addresses) => {
+    if (err) return callback(err);
+    const bad = addresses.find(a => isPrivateAddress(a.address));
+    if (bad) return callback(new Error(`refused: ${hostname} resolves to a private address`));
+    if (options.all) return callback(null, addresses);
+    callback(null, addresses[0].address, addresses[0].family);
+  });
+}
+
+/** Throws when the URL is not http(s) or its host resolves to a private address. */
 export async function assertPublic(url) {
   const { protocol, hostname } = new URL(url);
   if (protocol !== 'http:' && protocol !== 'https:') throw new Error(`refused: ${protocol} is not http(s)`);
@@ -118,11 +152,21 @@ export async function assertPublic(url) {
 export function isPrivateAddress(address) {
   if (isIP(address) === 6) {
     const a = address.toLowerCase();
-    const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/.exec(a);
-    if (mapped) return isPrivateAddress(mapped[1]);
+    const embedded = embeddedIPv4(a);
+    if (embedded) return isPrivateAddress(embedded);
     return a === '::' || a === '::1' || /^f[cd]/.test(a) || /^fe[89ab]/.test(a);
   }
   const [x, y] = address.split('.').map(Number);
   return x === 0 || x === 10 || x === 127 || (x === 100 && y >= 64 && y <= 127) || (x === 169 && y === 254)
     || (x === 172 && y >= 16 && y <= 31) || (x === 192 && y === 168) || x >= 224;
+}
+
+/** The IPv4 inside an IPv4-mapped (::ffff:0:0/96), compatible (::/96) or NAT64 (64:ff9b::/96) address, in either notation. */
+function embeddedIPv4(a) {
+  const dotted = /^(?:::ffff:|::|64:ff9b::)(\d+\.\d+\.\d+\.\d+)$/.exec(a);
+  if (dotted) return dotted[1];
+  const hex = /^(?:::ffff:|::|64:ff9b::)([0-9a-f]{1,4}):([0-9a-f]{1,4})$/.exec(a);
+  if (!hex) return null;
+  const hi = parseInt(hex[1], 16), lo = parseInt(hex[2], 16);
+  return `${hi >> 8}.${hi & 255}.${lo >> 8}.${lo & 255}`;
 }

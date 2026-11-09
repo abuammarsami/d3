@@ -88,7 +88,7 @@ if (json) {
   for (const p of [...errors, ...warnings]) {
     const tag = p.level === 'warn' ? `warning [${p.check}]` : `[${p.check}]`;
     say(`${p.file}:${p.line}: ${tag} ${p.message}`);
-    if (github) say(`::${p.level === 'warn' ? 'warning' : 'error'} file=${property(p.file)},line=${p.line},title=${property(`docs-check ${p.check}`)}::${escape(p.message)}`);
+    if (github) annotate(p.level === 'warn' ? 'warning' : 'error', `file=${property(p.file)},line=${p.line},title=${property(`docs-check ${p.check}`)}`, p.message);
   }
   if (args.includes('--external')) await reportExternal(result);
   const { counts } = result;
@@ -123,7 +123,8 @@ function allMarkdown() {
 function changedSince(base) {
   const git = a => execFileSync('git', a, { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
   try {
-    const names = `${git(['diff', '--name-only', `${base}...HEAD`])}\n${git(['diff', '--name-only', 'HEAD'])}`;
+    // --relative: paths relative to --root, the same base as git ls-files there (a monorepo package).
+    const names = `${git(['diff', '--name-only', '--relative', `${base}...HEAD`])}\n${git(['diff', '--name-only', '--relative', 'HEAD'])}`;
     return new Set(names.split('\n').filter(Boolean));
   } catch {
     fatal(`--changed: git could not diff against "${base}"`);
@@ -163,7 +164,13 @@ async function reportExternal({ files, parse }) {
 // at the start of a line, so every printed line is folded to one line, and annotation fields are
 // escaped as GitHub specifies.
 function say(line) {
-  console.log(String(line).replace(/[\r\n\u2028\u2029]+/g, ' '));
+  const one = String(line).replace(/[\r\n\u2028\u2029]+/g, ' ');
+  console.log(one.startsWith('::') ? ` ${one}` : one);
+}
+
+/** Our own GitHub annotation: the only output allowed to start with "::". */
+function annotate(kind, props, message) {
+  console.log(`::${kind} ${props}::${escape(message)}`.replace(/[\r\n]+/g, ' '));
 }
 
 function escape(s) {

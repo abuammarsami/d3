@@ -18,6 +18,12 @@ const option = name => {
 const root = path.resolve(option('--root') ?? gitRoot(process.cwd()));
 const today = option('--today') ?? new Date().toISOString().slice(0, 10);
 const owner = option('--owner') ?? gitUser() ?? '<owner>';
+if (!/^\d{4}-\d{2}-\d{2}$/.test(today) || new Date(`${today}T00:00:00Z`).toISOString().slice(0, 10) !== today) {
+  console.error(`scaffold: --today "${today}" is not a real YYYY-MM-DD date`);
+  process.exit(2);
+}
+// Owner goes into YAML: quote it, so "@handle", "Team: Docs" or "Bob #2" stay one plain string.
+const ownerYaml = JSON.stringify(owner);
 const project = path.basename(root);
 const apply = args.includes('--apply');
 
@@ -135,7 +141,7 @@ function frontmatter(title, related, type = 'reference') {
 title: ${title}
 type: ${type}
 status: active
-owner: ${owner}
+owner: ${ownerYaml}
 created: ${today}
 last-reviewed: ${today}
 tags: [index]
@@ -148,7 +154,7 @@ superseded-by: null
 }
 
 function fill(text) {
-  return text.replaceAll('<Project>', project).replace(/^owner: <name>$/m, `owner: ${owner}`)
+  return text.replaceAll('<Project>', project).replace(/^owner: <name>$/m, `owner: ${ownerYaml}`)
     .replace(/^created: YYYY-MM-DD$/m, `created: ${today}`).replace(/^last-reviewed: YYYY-MM-DD$/m, `last-reviewed: ${today}`);
 }
 

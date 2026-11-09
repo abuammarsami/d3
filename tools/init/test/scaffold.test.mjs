@@ -50,3 +50,12 @@ test('a repo with a docs system already is reported on, never written to', () =>
   assert.match(out, /missing: AGENTS\.md/);
   assert.ok(!existsSync(path.join(root, 'AGENTS.md')));
 });
+
+test('owner values YAML would misread are quoted, and a bad --today is refused', () => {
+  const root = repo({ 'src/a.js': '1\n' });
+  execFileSync('node', [scaffold, '--root', root, '--owner', '@octocat: Team #2', '--today', '2026-11-09', '--apply'], { encoding: 'utf8' });
+  const check = execFileSync('node', [checker, '--root', root, '--today', '2026-11-09'], { encoding: 'utf8' });
+  assert.match(check, /0 error\(s\)/);
+  assert.match(readFileSync(path.join(root, 'docs/README.md'), 'utf8'), /^owner: "@octocat: Team #2"$/m);
+  assert.throws(() => execFileSync('node', [scaffold, '--root', root, '--today', '2026/01/01'], { encoding: 'utf8', stdio: 'pipe' }), /not a real YYYY-MM-DD/);
+});

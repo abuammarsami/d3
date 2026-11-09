@@ -58,7 +58,7 @@ export async function runChecks(repo, { today, lock, changed } = {}) {
     const actions = rule('actions', file);
     if (actions) checkActions(doc, fm).forEach(actions);
   }
-  checkNumbering(repo, template).forEach(add(null, 'ids'));
+  checkNumbering(repo, template, f => vocabulary.ignorePaths.some(p => f.startsWith(p))).forEach(add(null, 'ids'));
 
   const drift = repo.isFile('drift.lock') ? null : rule('drift', null);
   for (const file of files.content) {

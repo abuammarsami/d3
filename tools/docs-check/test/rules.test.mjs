@@ -232,3 +232,44 @@ test('the docs/README.md template carries exactly the default vocabulary', async
   const template = readFileSync(path.join(here, '../../../templates/repo/docs-README.md'), 'utf8');
   assert.deepEqual(parseVocabulary(template), parseVocabularyYaml(DEFAULT_VOCABULARY_YAML));
 });
+
+test('review fixes: a link to a missing code file is a links error, not a crash', async () => {
+  const problems = await check({
+    'docs/reference/a.md': fm({ ...base, type: 'reference', status: 'active' }, '# A\n[code](../../src/missing.ts) [dir](../../src/v1.2/)\n'),
+  });
+  assert.ok(problems.some(p => p.startsWith('error:links:') && p.includes('missing.ts')));
+  assert.ok(!problems.some(p => p.includes(':drift:')));
+});
+
+test('review fixes: host:port and IP:port are not citations; a reversed range is reported', async () => {
+  const problems = await check({
+    'src/a.ts': 'export const a = 1;\n',
+    'docs/runbooks/db.md': fm({ ...base, type: 'runbook', status: 'active' }, '# DB\nConnect to `db.internal:5432` or `127.0.0.1:6379`. See `src/a.ts:1-1` and `src/a.ts:1-0`.\n'),
+  });
+  const drift = problems.filter(p => p.includes(':drift:'));
+  assert.equal(drift.length, 1, drift.join('\n'));
+  assert.match(drift[0], /line range is reversed/);
+});
+
+test('review fixes: with --changed, a citation to a deleted file is still reported', () => {
+  const repo = fixture({ 'docs/a.md': '# A\n`src/gone.ts#foo`\n' });
+  const doc = parseMarkdown(repo.read('docs/a.md'));
+  const [p] = checkDrift('docs/a.md', doc, repo, { changed: new Set(['src/gone.ts']) });
+  assert.match(p.message, /gone\.ts is not a file/);
+  assert.deepEqual(checkDrift('docs/a.md', doc, repo, { changed: new Set(['src/other.ts']) }), []);
+});
+
+test('review fixes: an Action items table without an Owner column is reported', async () => {
+  const problems = await check({
+    'docs/reference/incidents/x.md': fm({ ...base, type: 'incident', status: 'resolved' }, '# X\n## Action items\n| Action | Type | Ticket |\n|---|---|---|\n| Add alert | detect | #1 |\n'),
+  });
+  assert.ok(problems.some(p => p.includes(':actions:') && p.includes('no Owner column')));
+});
+
+test('review fixes: IPv4-mapped (hex form) and NAT64 addresses are private too', async () => {
+  const { isPrivateAddress, assertPublic } = await import('../src/links.mjs');
+  for (const a of ['::ffff:7f00:1', '::ffff:a9fe:a9fe', '64:ff9b::7f00:1', '64:ff9b::127.0.0.1', '::7f00:1']) assert.ok(isPrivateAddress(a), a);
+  assert.ok(!isPrivateAddress('::ffff:808:808'));
+  await assert.rejects(assertPublic('http://[::ffff:169.254.169.254]/latest/meta-data/'), /private address/);
+  await assert.rejects(assertPublic('http://[64:ff9b::7f00:1]/'), /private address/);
+});

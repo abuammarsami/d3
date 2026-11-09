@@ -55,6 +55,9 @@ people and any coding agent. The doc system it packages started as the Partners 
   a file name in a pull request cannot start a GitHub workflow command.
 - `--external` link checking refuses private, loopback, link-local and metadata addresses and
   re-checks every redirect hop.
+  The address is checked inside the connection's own DNS lookup (no rebinding gap), and IPv4-mapped
+  and NAT64 IPv6 forms are caught.
+- A tracked file whose name starts with `::` cannot be read as a workflow command either.
 
 ## [1.0.1] - 2026-07-13
 
