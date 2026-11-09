@@ -5,6 +5,13 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Security
+- `docs-check` skips symlinks: a pull request could commit one pointing outside the checkout (a CI
+  runner's files) and the linter would read it and echo its lines into the CI log. `lock` refuses to
+  read or write `docs/.d3/citations.lock` through a symlink.
+
 ## [2.0.0] - 2026-11-09
 
 D³ grows from a doc-filing skill into a loop — init → prime → build → capture → check → review — for

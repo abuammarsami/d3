@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { lstatSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 
 /**
@@ -87,6 +87,9 @@ export function loadRepo(root) {
   } catch {
     tracked = walk(root, '');
   }
+  // Symlinks are skipped: a pull request can commit one that points outside the checkout (a runner's
+  // secrets, ~/.ssh), and the linter would read it and echo its lines into CI output.
+  tracked = tracked.filter(f => isRegularFile(path.join(root, f)));
   if (tracked.length === 0) throw new Error(`no files found in ${root}`);
   return new Repo(root, tracked);
 }
@@ -96,9 +99,9 @@ function walk(root, rel) {
   for (const name of readdirSync(path.join(root, rel))) {
     if (SKIP.has(name)) continue;
     const child = rel ? `${rel}/${name}` : name;
-    const st = statSync(path.join(root, child));
+    const st = lstatSync(path.join(root, child));
     if (st.isDirectory()) out.push(...walk(root, child));
-    else out.push(child);
+    else if (st.isFile()) out.push(child);
   }
   return out;
 }
@@ -109,5 +112,13 @@ export function findRoot(start) {
     return execFileSync('git', ['rev-parse', '--show-toplevel'], { cwd: start, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
   } catch {
     return start;
+  }
+}
+
+function isRegularFile(p) {
+  try {
+    return lstatSync(p).isFile();
+  } catch {
+    return false; // listed by git but gone from the working tree
   }
 }
