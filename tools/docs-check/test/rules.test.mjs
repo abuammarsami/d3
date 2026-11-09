@@ -223,3 +223,11 @@ test('output: a value with a newline cannot start a GitHub workflow command', as
   assert.ok(out.includes('injected'));
   assert.ok(!out.split('\n').some(l => l.startsWith('::error::injected')), out);
 });
+
+test('the docs/README.md template carries exactly the default vocabulary', async () => {
+  const { readFileSync } = await import('node:fs');
+  const { parseVocabulary, parseVocabularyYaml } = await import('../src/vocabulary.mjs');
+  const here = path.dirname(new URL(import.meta.url).pathname);
+  const template = readFileSync(path.join(here, '../../../templates/repo/docs-README.md'), 'utf8');
+  assert.deepEqual(parseVocabulary(template), parseVocabularyYaml(DEFAULT_VOCABULARY_YAML));
+});
