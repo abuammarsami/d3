@@ -10,7 +10,9 @@
 
 > **The repo holds the docs, so neither the people nor the agents have to guess from the code.**
 
-![D³ in 40 seconds: prime loads the docs a task needs, review checks a branch against what was agreed](assets/demo.gif)
+![A real run of the docs check: a business rule cites src/quota.js#canPost; after the function is renamed, the check reports the drift with the file and line](assets/demo.gif)
+
+*A real run, not a mock-up: the rule cites a function, someone renames it, and the docs check catches the stale doc.*
 
 ## Quick start
 
