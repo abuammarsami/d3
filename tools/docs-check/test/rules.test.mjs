@@ -202,3 +202,24 @@ test('no vocabulary block: the D³ default applies', async () => {
   assert.equal(vocabulary.source, 'default');
   assert.deepEqual(problems.filter(p => p.level === 'error'), []);
 });
+
+test('external links: private, loopback and metadata addresses are refused', async () => {
+  const { isPrivateAddress, assertPublic } = await import('../src/links.mjs');
+  for (const a of ['127.0.0.1', '10.1.2.3', '172.16.0.1', '192.168.1.1', '169.254.169.254', '100.64.0.1', '0.0.0.0', '::1', 'fd00::1', 'fe80::1', '::ffff:127.0.0.1']) {
+    assert.ok(isPrivateAddress(a), a);
+  }
+  for (const a of ['8.8.8.8', '1.1.1.1', '2606:4700::1111']) assert.ok(!isPrivateAddress(a), a);
+  await assert.rejects(assertPublic('http://169.254.169.254/latest/meta-data/'), /private address/);
+  await assert.rejects(assertPublic('file:///etc/passwd'), /not http/);
+});
+
+test('output: a value with a newline cannot start a GitHub workflow command', async () => {
+  const { execFileSync } = await import('node:child_process');
+  const root = mkdtempSync(path.join(tmpdir(), 'd3-inject-'));
+  mkdirSync(path.join(root, 'docs'), { recursive: true });
+  writeFileSync(path.join(root, 'docs/a.md'), fm({ ...base, type: 'guide', status: 'active', owner: '"x\\n::error::injected"', 'last-reviewed': '2026-01-01' }));
+  const here = path.dirname(new URL(import.meta.url).pathname);
+  const out = execFileSync('node', [path.join(here, '../check.mjs'), 'review-due', '--root', root, '--today', TODAY], { encoding: 'utf8', env: { ...process.env, GITHUB_ACTIONS: 'true', GITHUB_STEP_SUMMARY: '' } });
+  assert.ok(out.includes('injected'));
+  assert.ok(!out.split('\n').some(l => l.startsWith('::error::injected')), out);
+});

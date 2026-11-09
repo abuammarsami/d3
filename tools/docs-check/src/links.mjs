@@ -1,4 +1,6 @@
 import path from 'node:path';
+import { lookup } from 'node:dns/promises';
+import { isIP } from 'node:net';
 
 const SCHEME = /^[a-z][a-z0-9+.-]*:/i;
 
@@ -67,7 +69,11 @@ function caseHint(repo, target) {
   return actual ? ` (the tracked path is ${actual}: paths are case-sensitive on GitHub)` : '';
 }
 
-/** Optional, non-blocking: fetches each external URL once and reports the ones that do not answer 2xx/3xx. */
+/**
+ * Optional, non-blocking: fetches each external URL once and reports the ones that do not answer 2xx/3xx.
+ * Runs in CI on pull requests, so a link must not turn the runner into a probe of its own network:
+ * only http(s), only hosts that resolve to public addresses, and every redirect hop is re-checked.
+ */
 export async function checkExternal(urls, { timeoutMs = 10000, concurrency = 8 } = {}) {
   const queue = [...urls];
   const failures = [];
@@ -75,10 +81,8 @@ export async function checkExternal(urls, { timeoutMs = 10000, concurrency = 8 }
     while (queue.length > 0) {
       const url = queue.shift();
       try {
-        let res = await fetch(url, { method: 'HEAD', redirect: 'follow', signal: AbortSignal.timeout(timeoutMs) });
-        if (res.status === 405 || res.status === 403) {
-          res = await fetch(url, { method: 'GET', redirect: 'follow', signal: AbortSignal.timeout(timeoutMs) });
-        }
+        let res = await safeFetch(url, 'HEAD', timeoutMs);
+        if (res.status === 405 || res.status === 403) res = await safeFetch(url, 'GET', timeoutMs);
         if (res.status >= 400) failures.push({ url, reason: `HTTP ${res.status}` });
       } catch (e) {
         failures.push({ url, reason: e.name === 'TimeoutError' ? 'timeout' : e.message });
@@ -87,4 +91,38 @@ export async function checkExternal(urls, { timeoutMs = 10000, concurrency = 8 }
   }
   await Promise.all(Array.from({ length: concurrency }, worker));
   return failures;
+}
+
+async function safeFetch(start, method, timeoutMs) {
+  let url = start;
+  for (let hop = 0; hop < 5; hop++) {
+    await assertPublic(url);
+    const res = await fetch(url, { method, redirect: 'manual', signal: AbortSignal.timeout(timeoutMs) });
+    if (res.status < 300 || res.status >= 400 || !res.headers.get('location')) return res;
+    url = new URL(res.headers.get('location'), url).href;
+  }
+  throw new Error('too many redirects');
+}
+
+export async function assertPublic(url) {
+  const { protocol, hostname } = new URL(url);
+  if (protocol !== 'http:' && protocol !== 'https:') throw new Error(`refused: ${protocol} is not http(s)`);
+  const host = hostname.replace(/^\[|\]$/g, '');
+  const addresses = isIP(host) ? [{ address: host }] : await lookup(host, { all: true });
+  for (const { address } of addresses) {
+    if (isPrivateAddress(address)) throw new Error(`refused: ${hostname} resolves to a private address`);
+  }
+}
+
+/** Loopback, private, link-local (cloud metadata), carrier-grade NAT, unique-local and unspecified ranges. */
+export function isPrivateAddress(address) {
+  if (isIP(address) === 6) {
+    const a = address.toLowerCase();
+    const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/.exec(a);
+    if (mapped) return isPrivateAddress(mapped[1]);
+    return a === '::' || a === '::1' || /^f[cd]/.test(a) || /^fe[89ab]/.test(a);
+  }
+  const [x, y] = address.split('.').map(Number);
+  return x === 0 || x === 10 || x === 127 || (x === 100 && y >= 64 && y <= 127) || (x === 169 && y === 254)
+    || (x === 172 && y >= 16 && y <= 31) || (x === 192 && y === 168) || x >= 224;
 }

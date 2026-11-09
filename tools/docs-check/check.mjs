@@ -46,7 +46,7 @@ if (command === 'cites') {
   if (wanted.length === 0) fatal('cites needs at least one path');
   const hits = citing(wanted);
   if (json) console.log(JSON.stringify(hits, null, 2));
-  else for (const h of hits) console.log(`${h.doc}  ← ${h.cites.join(', ')}`);
+  else for (const h of hits) say(`${h.doc}  ← ${h.cites.join(', ')}`);
   process.exit(0);
 }
 
@@ -87,8 +87,8 @@ if (json) {
 } else {
   for (const p of [...errors, ...warnings]) {
     const tag = p.level === 'warn' ? `warning [${p.check}]` : `[${p.check}]`;
-    console.log(`${p.file}:${p.line}: ${tag} ${p.message}`);
-    if (github) console.log(`::${p.level === 'warn' ? 'warning' : 'error'} file=${p.file},line=${p.line},title=docs-check ${p.check}::${escape(p.message)}`);
+    say(`${p.file}:${p.line}: ${tag} ${p.message}`);
+    if (github) say(`::${p.level === 'warn' ? 'warning' : 'error'} file=${property(p.file)},line=${p.line},title=${property(`docs-check ${p.check}`)}::${escape(p.message)}`);
   }
   if (args.includes('--external')) await reportExternal(result);
   const { counts } = result;
@@ -136,11 +136,11 @@ function reportReviewDue(due) {
     return;
   }
   console.log(`review-due: ${due.length} living doc(s) past their review date (today ${today})`);
-  for (const d of due) console.log(`  ${d.dueOn}  ${d.file}  [${d.type}/${d.status}, owner ${d.owner}, last reviewed ${d.lastReviewed}]`);
+  for (const d of due) say(`  ${d.dueOn}  ${d.file}  [${d.type}/${d.status}, owner ${d.owner}, last reviewed ${d.lastReviewed}]`);
   if (!github || due.length === 0) return;
   console.log(`::warning title=Docs review due::${due.length} living doc(s) are past their review date; the job summary lists them. Review, then bump last-reviewed.`);
   if (process.env.GITHUB_STEP_SUMMARY) {
-    const rows = due.map(d => `| ${d.dueOn} | \`${d.file}\` | ${d.type} / ${d.status} | ${d.owner} |`).join('\n');
+    const rows = due.map(d => `| ${cell(d.dueOn)} | \`${cell(d.file)}\` | ${cell(d.type)} / ${cell(d.status)} | ${cell(d.owner)} |`).join('\n');
     appendFileSync(
       process.env.GITHUB_STEP_SUMMARY,
       `### Docs past their review date (${due.length})\n\nNon-blocking. Review each doc against the code, then set \`last-reviewed\` to today.\n\n| Due | Doc | Type / status | Owner |\n|---|---|---|---|\n${rows}\n`,
@@ -154,13 +154,28 @@ async function reportExternal({ files, parse }) {
   const failures = await checkExternal([...urls]);
   console.log(`external: ${urls.size} URL(s) fetched, ${failures.length} did not answer (warnings only)`);
   for (const f of failures) {
-    console.log(`  ${f.url}: ${f.reason}`);
+    say(`  ${f.url}: ${f.reason}`);
     if (github) console.log(`::warning title=docs-check external link::${escape(`${f.url}: ${f.reason}`)}`);
   }
 }
 
+// Values printed here come from files a pull request can change. GitHub runs a workflow command only
+// at the start of a line, so every printed line is folded to one line, and annotation fields are
+// escaped as GitHub specifies.
+function say(line) {
+  console.log(String(line).replace(/[\r\n\u2028\u2029]+/g, ' '));
+}
+
 function escape(s) {
-  return s.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
+  return String(s).replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
+}
+
+function property(s) {
+  return escape(s).replace(/:/g, '%3A').replace(/,/g, '%2C');
+}
+
+function cell(s) {
+  return String(s ?? '').replace(/[\r\n]+/g, ' ').replace(/\|/g, '\\|').replace(/`/g, "'");
 }
 
 function vocab() {
