@@ -1,0 +1,33 @@
+name: D³ docs-check
+description: "Lint a repo's docs: frontmatter vocabulary, links and anchors, Mermaid, ids, acceptance criteria, citation drift, evidence files, coverage, review-due. Zero dependencies."
+author: Md. Abu Ammar
+branding:
+  icon: book-open
+  color: green
+
+inputs:
+  args:
+    description: "Arguments for check.mjs, e.g. '--strict' or 'drift --changed origin/main'."
+    required: false
+    default: ""
+  review-due:
+    description: "Also print the docs past their review date (report only)."
+    required: false
+    default: "true"
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 22
+    - name: Docs check
+      shell: bash
+      env:
+        D3_ARGS: ${{ inputs.args }}
+      # D3_ARGS is split on spaces on purpose (it is a list of flags); it is never evaluated as code.
+      run: node "$GITHUB_ACTION_PATH/tools/docs-check/check.mjs" --root "$GITHUB_WORKSPACE" $D3_ARGS
+    - name: Docs past their review date
+      if: ${{ inputs.review-due == 'true' }}
+      shell: bash
+      run: node "$GITHUB_ACTION_PATH/tools/docs-check/check.mjs" review-due --root "$GITHUB_WORKSPACE"

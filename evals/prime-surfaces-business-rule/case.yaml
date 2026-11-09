@@ -1,82 +1,34 @@
-name: Prime — surfaces the governing business rule, not a file dump
-description: >
-  For a task that touches membership tiers and quotas, `prime` should discover the repo's
-  taxonomy, load the root contract, and pull the ONE business rule and the active plan that
-  govern the task — as a compact context pack, not by pasting whole files.
-tags: [prime, context-economy]
+schema_version: '1.1'
+name: prime-surfaces-business-rule
+description: For a task that touches membership tiers and quotas, `prime` should discover the repo's taxonomy, load
+  the root contract, and pull the ONE business rule and the active plan that govern the task — as a compact context
+  pack, not by pasting whole files.
+tags:
+- prime
+- context-economy
 runs: 3
-timeout: 120
-
-files:
-  - path: CLAUDE.md
-    content: |
-      # Shopfront — Agent Contract
-
-      Router. Long-form detail lives in `docs/`; module rules auto-load per subtree.
-
-      ## Module Rules (auto-loaded)
-      - `src/ads/CLAUDE.md` — ad posting + validation
-      - `src/billing/CLAUDE.md` — membership + payments
-
-      ## Reference
-      - Membership + quota rules: docs/reference/business-rules/membership.md
-      - Plans: docs/plans/
-
-      ## Rules
-      14. No undocumented work — docs ship in the same change set as the code.
-
-  - path: docs/README.md
-    content: |
-      # Docs
-
-      Every doc lives in one of six top-level folders, organized by **document type**
-      (not by feature): `architecture/`, `plans/`, `runbooks/`, `guides/`, `reference/`
-      (audits, incidents, modules, business-rules), `legacy/`.
-      Status lifecycle: draft → in-review → active → implemented → deprecated.
-
-  - path: docs/reference/business-rules/membership.md
-    content: |
-      ---
-      type: reference
-      status: active
-      ---
-      # Membership
-
-      Tiers Bronze → Platinum, each with a monthly post quota.
-
-      **Payment ≠ activation: the tier is granted by admin approval, not by paying.**
-
-      - `PerMonthTotalPost` — the monthly ad-post quota for the tier (`MembershipPolicy` table).
-      - Upgrades create a `MembershipRequest` (status Pending) until an admin approves.
-
-  - path: docs/plans/ads/posting-limits/README.md
-    content: |
-      ---
-      type: plan
-      status: active
-      ---
-      # Plan — enforce per-tier ad posting limits
-
-      Gate ad-create on `PerMonthTotalPost` for the caller's active tier. Count posts in
-      the current billing month; block with a clear error at the quota.
-
-  - path: docs/plans/README.md
-    content: |
-      # Plans
-      | Plan | Status |
-      |------|--------|
-      | ads/posting-limits | active |
-
-prompt: |
-  I'm about to add tier-based ad posting limits to this repo. Before I write any code,
-  load the context I need from the docs so I get the rules right. Use /d3:d3 prime if it's
-  available.
-
-criteria:
-  - It discovers the taxonomy from docs/README.md and loads the root CLAUDE.md.
-  - It surfaces docs/reference/business-rules/membership.md and states the load-bearing rule — that payment does not equal activation, and PerMonthTotalPost is the monthly quota.
-  - It surfaces the active plan docs/plans/ads/posting-limits/README.md.
-  - It returns a compact context pack that summarizes each loaded doc in roughly a line — it does NOT paste the full contents of the files.
-
+context:
+  scaffold_script: fixture.sh
+execution:
+  prompt: |-
+    I'm about to add tier-based ad posting limits to this repo. Before I write any code,
+    load the context I need from the docs so I get the rules right. Use /d3:prime if it's
+    available.
+  max_turns: 30
+  timeout_seconds: 240
+  allowed_tools:
+  - Skill
+  - Read
+  - Glob
+  - Grep
+  - Bash
 graders:
-  - graders/context-pack.md
+- name: criteria
+  type: llm
+  criteria: |-
+    PASS only if ALL of the following hold; otherwise FAIL.
+
+    1. It discovers the taxonomy from docs/README.md and loads the root CLAUDE.md.
+    2. It surfaces docs/reference/business-rules/membership.md and states the load-bearing rule — that payment does not equal activation, and PerMonthTotalPost is the monthly quota.
+    3. It surfaces the active plan docs/plans/ads/posting-limits/README.md.
+    4. It returns a compact context pack that summarizes each loaded doc in roughly a line — it does NOT paste the full contents of the files.

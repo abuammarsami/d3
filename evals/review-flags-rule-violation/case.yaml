@@ -1,0 +1,33 @@
+schema_version: '1.1'
+name: review-flags-rule-violation
+description: A diff that grants unlimited posting on payment contradicts the documented rule that payment does not
+  equal activation. Review must quote the rule, flag the undocumented behaviour change, and change nothing.
+tags:
+- review
+- rules
+- read-only
+runs: 3
+context:
+  scaffold_script: fixture.sh
+execution:
+  prompt: Review this change against the docs. The diff (already applied to src/ads/quota.ts) added the line `if
+    (user.paid) return true;` to canPost, so paying users post without a limit. No docs were changed. Use /d3:review
+    if available.
+  max_turns: 30
+  timeout_seconds: 360
+  allowed_tools:
+  - Skill
+  - Read
+  - Glob
+  - Grep
+  - Bash
+graders:
+- name: criteria
+  type: llm
+  criteria: |-
+    PASS only if ALL of the following hold; otherwise FAIL.
+
+    1. {'It flags that the change contradicts the documented rule, quoting or closely paraphrasing "Payment ≠ activation': 'the tier is granted by admin approval, not by paying".'}
+    2. {'It flags undocumented work': 'behaviour changed and no doc was updated, naming membership.md (or an ADR) as what should change.'}
+    3. It gives a verdict such as "needs changes" or "needs docs" and suggests a follow-up (for example /d3:capture --decision or reverting).
+    4. It does NOT edit any file.

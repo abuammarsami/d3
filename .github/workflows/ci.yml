@@ -1,0 +1,39 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [18, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Linter and scaffold tests
+        run: node --test tools/docs-check/test/*.test.mjs tools/init/test/*.test.mjs
+      - name: This repo's own docs pass the check
+        run: node tools/docs-check/check.mjs
+  mermaid:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Scaffold a fresh repo with /d3:init's script, then check it with a full Mermaid parse
+        run: |
+          cd tools/docs-check && npm install --no-save --no-audit --no-fund mermaid@11 jsdom@26 && cd ../..
+          demo="$RUNNER_TEMP/demo" && mkdir -p "$demo" && git -C "$demo" init -q
+          node tools/init/scaffold.mjs --root "$demo" --owner CI --apply
+          node tools/docs-check/check.mjs --root "$demo" --strict
+          node tools/docs-check/check.mjs --only mermaid

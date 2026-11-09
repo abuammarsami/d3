@@ -1,0 +1,32 @@
+schema_version: '1.1'
+name: check-runs-the-linter
+description: /d3:check must run the docs-check script and report its findings (here a broken link and a status outside
+  the vocabulary), and must not edit files without confirmation.
+tags:
+- check
+- linter
+runs: 2
+context:
+  scaffold_script: fixture.sh
+execution:
+  prompt: /d3:check
+  max_turns: 30
+  timeout_seconds: 300
+  allowed_tools:
+  - Skill
+  - Read
+  - Glob
+  - Grep
+  - Bash
+  - Write
+  - Edit
+graders:
+- name: criteria
+  type: llm
+  criteria: |-
+    PASS only if ALL of the following hold; otherwise FAIL.
+
+    1. It runs the docs-check script (node …/docs-check/check.mjs) rather than inspecting files by hand only.
+    2. It reports the broken link to ../runbooks/deploy.md.
+    3. It reports that status "done" is not allowed for type guide.
+    4. It does not modify files without asking first.

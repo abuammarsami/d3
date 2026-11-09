@@ -1,0 +1,30 @@
+schema_version: '1.1'
+name: answer-from-docs
+description: The repo documents a refund rule whose reason is not visible in the code. Asked how refunds work, the
+  agent should find and cite the doc, including the why the code cannot show.
+tags:
+- prime
+- ablation
+- no-guessing
+runs: 3
+context:
+  scaffold_script: fixture.sh
+execution:
+  prompt: How does the refund window work in this repo, and why is it counted that way? Use /d3:prime if available.
+  max_turns: 30
+  timeout_seconds: 300
+  allowed_tools:
+  - Skill
+  - Read
+  - Glob
+  - Grep
+  - Bash
+graders:
+- name: criteria
+  type: llm
+  criteria: |-
+    PASS only if ALL of the following hold; otherwise FAIL.
+
+    1. It says the window is 14 days counted from delivery (not purchase).
+    2. It gives the reason from the doc (chargeback rules count from delivery / the agreement with the payment provider), which the code alone does not show.
+    3. It cites docs/reference/business-rules/refunds.md as the source.

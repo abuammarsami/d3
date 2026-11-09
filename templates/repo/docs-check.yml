@@ -1,0 +1,29 @@
+# Docs CI (D³). Fails a pull request on a broken link, a wrong frontmatter value, a Mermaid diagram that
+# does not parse, a reused ADR number or an open question in a settled doc. Warnings (drift, missing
+# acceptance criteria, evidence files) are annotated but never fail unless you add --strict.
+name: docs-check
+
+on:
+  # Every pull request, not only ones that touch Markdown: renaming or deleting cited code is exactly
+  # what breaks a doc, and that happens in code-only changes.
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Docs check
+        run: node tools/docs-check/check.mjs
+      - name: Docs past their review date (report only)
+        run: node tools/docs-check/check.mjs review-due

@@ -1,0 +1,34 @@
+schema_version: '1.1'
+name: capture-plan-acceptance
+description: A captured plan routes to docs/plans/{module}/{kebab}/README.md with an Acceptance criteria section
+  of AC-n items in Given/When/Then form, confirms before writing, and turns unknowns into NEEDS CLARIFICATION instead
+  of inventing them.
+tags:
+- capture
+- plan
+- acceptance-criteria
+runs: 3
+context:
+  scaffold_script: fixture.sh
+execution:
+  prompt: 'Capture a plan: let customers export their order history as CSV. Use /d3:capture --plan if available.'
+  max_turns: 30
+  timeout_seconds: 360
+  allowed_tools:
+  - Skill
+  - Read
+  - Glob
+  - Grep
+  - Bash
+  - Write
+  - Edit
+graders:
+- name: criteria
+  type: llm
+  criteria: |-
+    PASS only if ALL of the following hold; otherwise FAIL.
+
+    1. It chooses a destination of the form docs/plans/<module>/<kebab>/README.md (for example docs/plans/orders/csv-export/README.md).
+    2. The proposed plan has an Acceptance criteria section with numbered items (AC-1, AC-2, …), each written as Given / When / Then.
+    3. It does not invent product facts it was not given (such as a row limit, a date range, or which columns are included); it asks, or marks them [NEEDS CLARIFICATION].
+    4. Before writing, it states the destination and the files it will create or modify (including the plans index) and waits for confirmation.
