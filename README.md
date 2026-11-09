@@ -1,5 +1,7 @@
 ![Document-Driven Development (D³)](assets/banner.svg)
 
+[![CI](https://github.com/abuammarsami/d3/actions/workflows/ci.yml/badge.svg)](https://github.com/abuammarsami/d3/actions/workflows/ci.yml)
+[![GitHub stars](https://img.shields.io/github/stars/abuammarsami/d3?style=flat)](https://github.com/abuammarsami/d3/stargazers)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![version](https://img.shields.io/badge/version-2.0.0-5fc9bf)](CHANGELOG.md)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-9d8cff)](https://docs.claude.com/en/docs/claude-code)
@@ -7,6 +9,22 @@
 [![docs-check](https://img.shields.io/badge/docs--check-zero%20deps-brightgreen)](tools/docs-check/README.md)
 
 > **The repo holds the docs, so neither the people nor the agents have to guess from the code.**
+
+![D³ in 40 seconds: prime loads the docs a task needs, review checks a branch against what was agreed](assets/demo.gif)
+
+## Quick start
+
+```text
+/plugin marketplace add abuammarsami/d3
+/plugin install d3@ammar-skills
+/d3:init
+```
+
+`init` is a dry run until you say yes, and never overwrites a file. Other agents (Codex, Cursor,
+Copilot, Gemini…) need nothing installed: the result is `AGENTS.md` and `docs/`, which they already
+read.
+
+## Why
 
 Code says *what* the system does. It does not say **why** a rule exists, **which decisions** are
 settled, **what broke last time**, or **what was agreed** for the feature being built. On most
@@ -122,18 +140,6 @@ Use it as a GitHub Action without vendoring:
 ```
 
 Full reference: [tools/docs-check/README.md](tools/docs-check/README.md).
-
----
-
-## Install
-
-```text
-/plugin marketplace add abuammarsami/d3
-/plugin install d3@ammar-skills
-```
-
-Then, in a repo: `/d3:init`. For other agents (Codex, Cursor, Copilot, Gemini…) the result is plain
-files they already read: `AGENTS.md` and `docs/`.
 
 ---
 
