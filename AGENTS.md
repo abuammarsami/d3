@@ -7,7 +7,7 @@
 - Docs check (this repo's own docs): `node tools/docs-check/check.mjs`
 - Full Mermaid parse: `cd tools/docs-check && npm install --no-save mermaid@11 jsdom@26`, then the check (never commit `node_modules/`)
 - Plugin manifest: `claude plugin validate .`
-- Behaviour evals: `claude plugin eval . --scaffold --ablation with-without --trust-plugin --allow-tools "Bash(node:*)" "Bash(git:*)" Write Edit`
+- Behaviour evals: `claude plugin eval . --scaffold --ablation with-without --trust-plugin --allow-tools Bash Write Edit --judge-model sonnet`
 
 ## Conventions an agent would get wrong
 

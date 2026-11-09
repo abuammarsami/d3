@@ -22,6 +22,9 @@ Shared rules, relative to this skill's directory — read the first three before
    which one. One fact, one home: if a doc for it exists, update that doc (unless it is immutable).
 3. **Gather the facts** — read the code you will cite (`path#Symbol`), the docs it touches, and the
    user's words. Quote reports verbatim. Never invent; unknowns become `[NEEDS CLARIFICATION: …]`.
+   That includes **product facts the user did not give** — fields and columns, limits, prices, copy,
+   who may do what. Don't fill them with plausible defaults inside a criterion; write the marker, and
+   if a default would help, offer it separately, labelled as a suggestion for the user to accept.
 4. **Template** — copy the repo's template (`docs/templates/<kind>.md`, or the one `docs/README.md`
    names). Without one, use the plugin's at `../../templates/docs/<kind>.md`. Keep its headings,
    replace every placeholder, delete the italic guidance.

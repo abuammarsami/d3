@@ -109,6 +109,15 @@ Release from branch `v2` as 2.0.0. `/d3:d3 <verb>` keeps v1 invocations working.
 - Parity: the D³ check against the Partners checker on the Partners repo (read-only) — AC-3.
 - `claude plugin eval . --scaffold --ablation with-without` — AC-1, AC-2, AC-6, AC-7.
 
+## Eval results (2026-11-09, Sonnet, 1–3 runs per case)
+
+All 15 cases pass with the plugin in their final runs. Without it, only `review-flags-rule-violation`
+and `answer-from-docs` pass (a cold agent can read one obvious doc); `capture-bug-routing` and
+`prime-surfaces-business-rule` score 0.5; the other 11 score 0. Two skill fixes came out of the runs:
+`capture` now shows a doc's key content in final form before asking, and treats product facts the user
+did not give (CSV columns) as `[NEEDS CLARIFICATION]`. These are per-case re-runs after fixes, not one
+clean full-suite run — the next release check should be a single full run at 3 runs per case.
+
 ## Done when
 
 - [x] Tests, parity and smoke runs pass (2026-11-09).

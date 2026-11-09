@@ -8,14 +8,18 @@ plus a `fixture.sh` that builds a tiny repo with a `docs/` corpus in the run's e
 
 ```bash
 # with and without the plugin, to see what it adds over a cold agent
-claude plugin eval . --scaffold --ablation with-without --trust-plugin
+claude plugin eval . --scaffold --ablation with-without --trust-plugin \
+  --allow-tools Bash Write Edit --judge-model sonnet
 
 # one case, one run, cheaply
 claude plugin eval . --scaffold --case review-flags-rule-violation --runs 1 --ablation none --model sonnet
 ```
 
-`--scaffold` is required: it runs each case's `fixture.sh` (author-written Bash, as you). Results go to
-`evals/results/` (git-ignored).
+`--scaffold` is required: it runs each case's `fixture.sh` (author-written Bash, as you). The skills run
+`node …/check.mjs` and `node …/scaffold.mjs` from the plugin, so grant `Bash` (a narrow `Bash(node:*)`
+does not match the plugin's absolute path); granting `Write`/`Edit` lets a case catch a skill that
+writes without asking. Use a Sonnet judge: the default Haiku judge failed correct answers in 3 cases.
+Results go to `evals/results/` (git-ignored).
 
 ## Cases
 
