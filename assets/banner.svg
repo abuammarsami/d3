@@ -20,7 +20,7 @@
   </g>
 
   <!-- eyebrow -->
-  <text x="80" y="86" font-family="'Courier New', monospace" font-size="20" letter-spacing="3" fill="#5fc9bf">a Claude Code skill  ·  prime  ·  capture</text>
+  <text x="80" y="86" font-family="'Courier New', monospace" font-size="20" letter-spacing="3" fill="#5fc9bf">a Claude Code plugin  ·  init · prime · capture · review</text>
 
   <!-- title -->
   <text x="76" y="176" font-family="Georgia, 'Times New Roman', serif" font-size="86" font-weight="bold" fill="#f4f6fb">Document-Driven</text>
