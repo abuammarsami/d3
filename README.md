@@ -6,9 +6,9 @@
 [![CI](https://github.com/abuammarsami/d3/actions/workflows/ci.yml/badge.svg)](https://github.com/abuammarsami/d3/actions/workflows/ci.yml)
 [![GitHub stars](https://img.shields.io/github/stars/abuammarsami/d3?style=flat)](https://github.com/abuammarsami/d3/stargazers)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
-[![version](https://img.shields.io/badge/version-2.0.0-5fc9bf)](CHANGELOG.md)
-[![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-9d8cff)](https://docs.claude.com/en/docs/claude-code)
-[![AGENTS.md](https://img.shields.io/badge/AGENTS.md-any%20agent-5fc9bf)](https://agents.md)
+[![version](https://img.shields.io/badge/version-2.0.0-3f7f3b)](CHANGELOG.md)
+[![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-5e5d59)](https://docs.claude.com/en/docs/claude-code)
+[![AGENTS.md](https://img.shields.io/badge/AGENTS.md-any%20agent-3f7f3b)](https://agents.md)
 [![docs-check](https://img.shields.io/badge/docs--check-zero%20deps-brightgreen)](tools/docs-check/README.md)
 
 > **The repo holds the docs, so neither the people nor the agents have to guess from the code.**
