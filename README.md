@@ -1,4 +1,7 @@
-![Document-Driven Development (D³)](assets/banner.svg)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/banner-dark.png">
+  <img alt="Document-Driven Development (D³): docs your coding agent can work from, kept true in CI" src="assets/banner-light.png">
+</picture>
 
 [![CI](https://github.com/abuammarsami/d3/actions/workflows/ci.yml/badge.svg)](https://github.com/abuammarsami/d3/actions/workflows/ci.yml)
 [![GitHub stars](https://img.shields.io/github/stars/abuammarsami/d3?style=flat)](https://github.com/abuammarsami/d3/stargazers)
