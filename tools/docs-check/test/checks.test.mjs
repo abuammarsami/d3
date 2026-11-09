@@ -175,3 +175,32 @@ test('end to end: CRLF files are read, a BOM is refused, and every check reports
   const summary = problems.filter(p => p.level === 'error').map(p => `${p.file}:${p.check}`).sort();
   assert.deepEqual(summary, ['CLAUDE.md:links', 'docs/bad.md:frontmatter', 'docs/bad.md:links', 'docs/bad.md:mermaid', 'docs/bom.md:frontmatter']);
 });
+
+test('symlinks: a committed link to a file outside the repo is never read, and lock refuses to write through one', async () => {
+  const { symlinkSync, readFileSync: read, existsSync } = await import('node:fs');
+  const { execFileSync } = await import('node:child_process');
+  const { loadRepo } = await import('../src/repo.mjs');
+  const outside = mkdtempSync(path.join(tmpdir(), 'outside-'));
+  writeFileSync(path.join(outside, 'secret.md'), 'TOKEN=abc123\n');
+  const root = mkdtempSync(path.join(tmpdir(), 'docs-check-'));
+  mkdirSync(path.join(root, 'docs'));
+  writeFileSync(path.join(root, 'docs/README.md'), fm({ ...valid, type: 'reference' }, vocabularyBlock));
+  symlinkSync(path.join(outside, 'secret.md'), path.join(root, 'docs/leak.md'));
+  execFileSync('git', ['init', '-q'], { cwd: root });
+  execFileSync('git', ['add', '-A'], { cwd: root });
+  const repo = loadRepo(root);
+  assert.ok(repo.isFile('docs/README.md'));
+  assert.ok(!repo.isFile('docs/leak.md'), 'a symlink is not part of the checked set');
+  // lock: docs/.d3 pointing outside must be refused, and nothing written there.
+  symlinkSync(outside, path.join(root, 'docs/.d3'));
+  const check = new URL('../check.mjs', import.meta.url).pathname;
+  let code = 0;
+  try {
+    execFileSync('node', [check, 'lock', '--root', root], { stdio: 'pipe' });
+  } catch (e) {
+    code = e.status;
+  }
+  assert.equal(code, 2);
+  assert.ok(!existsSync(path.join(outside, 'citations.lock')));
+  assert.equal(read(path.join(outside, 'secret.md'), 'utf8'), 'TOKEN=abc123\n');
+});

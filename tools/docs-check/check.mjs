@@ -6,7 +6,7 @@
 //   node check.mjs cites <path>...    docs that cite these files or folders (for prime --diff and review)
 //   node check.mjs lock               write docs/.d3/citations.lock (content fingerprints of cited code)
 // Options: --root <dir>  --today YYYY-MM-DD  --only <check,...>  --strict  --json  --external
-import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { appendFileSync, existsSync, lstatSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { checkExternal } from './src/links.mjs';
@@ -59,6 +59,7 @@ if (command === 'lock') {
       if (fp) lock[citationKey(c)] = fp;
     }
   }
+  refuseSymlink(LOCK);
   mkdirSync(path.join(root, path.dirname(LOCK)), { recursive: true });
   const sorted = Object.fromEntries(Object.entries(lock).sort(([a], [b]) => a.localeCompare(b)));
   writeFileSync(path.join(root, LOCK), `${JSON.stringify(sorted, null, 2)}\n`);
@@ -67,6 +68,7 @@ if (command === 'lock') {
 }
 
 const lockPath = path.join(root, LOCK);
+refuseSymlink(LOCK);
 const lock = existsSync(lockPath) ? JSON.parse(readFileSync(lockPath, 'utf8')) : undefined;
 const changed = option('--changed') ? changedSince(option('--changed')) : undefined;
 const result = await runChecks(repo, { today, lock, changed });
@@ -193,4 +195,21 @@ function vocab() {
 function fatal(message) {
   console.error(`docs-check: ${message}`);
   process.exit(2);
+}
+
+/** The lock lives in the repo: never read or write it through a symlink a branch may have committed. */
+function refuseSymlink(relative) {
+  const parts = relative.split('/');
+  for (let i = 1; i <= parts.length; i++) {
+    let link = false;
+    try {
+      link = lstatSync(path.join(root, ...parts.slice(0, i))).isSymbolicLink();
+    } catch {
+      return; // the rest of the path does not exist yet
+    }
+    if (link) {
+      console.error(`docs-check: refusing to use ${parts.slice(0, i).join('/')}: it is a symlink`);
+      process.exit(2);
+    }
+  }
 }
