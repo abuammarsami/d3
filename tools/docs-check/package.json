@@ -1,0 +1,13 @@
+{
+  "name": "d3-docs-check",
+  "private": true,
+  "version": "2.0.0",
+  "description": "D³ docs linter: frontmatter vocabulary, links and anchors, Mermaid, ids, acceptance criteria, citation drift, evidence, coverage, review-due. Zero dependencies.",
+  "type": "module",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "check": "node check.mjs",
+    "review-due": "node check.mjs review-due",
+    "test": "node --test test/*.test.mjs"
+  }
+}

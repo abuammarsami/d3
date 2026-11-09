@@ -1,0 +1,204 @@
+// The D³ rules and the YAML reader, each proven both ways (a good input passes, a bad one is reported).
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { Repo } from '../src/repo.mjs';
+import { parseMarkdown } from '../src/markdown.mjs';
+import { parseYaml } from '../src/yaml.mjs';
+import { runChecks } from '../src/run.mjs';
+import { DEFAULT_VOCABULARY_YAML } from '../src/vocabulary.mjs';
+import { checkDrift, citationsOf, citationKey, fingerprint } from '../src/rules.mjs';
+
+const TODAY = '2026-11-09';
+
+function fixture(files) {
+  const root = mkdtempSync(path.join(tmpdir(), 'd3-check-'));
+  for (const [name, content] of Object.entries(files)) {
+    mkdirSync(path.dirname(path.join(root, name)), { recursive: true });
+    writeFileSync(path.join(root, name), content);
+  }
+  return new Repo(root, Object.keys(files));
+}
+
+const fm = (fields, body = '# Doc\n') =>
+  `---\n${Object.entries(fields).map(([k, v]) => `${k}: ${v}`).join('\n')}\n---\n\n${body}`;
+const base = { title: 'A doc', owner: 'Owner', created: '2026-10-01', 'last-reviewed': '2026-11-01' };
+const readme = (extra = '') => fm({ ...base, type: 'reference', status: 'active' },
+  `# Docs\n\n<!-- docs-check:vocabulary -->\n\`\`\`yaml\n${DEFAULT_VOCABULARY_YAML}${extra}\n\`\`\`\n`);
+
+async function check(files) {
+  const { problems } = await runChecks(fixture({ 'docs/README.md': readme(), ...files }), { today: TODAY });
+  return problems.map(p => `${p.level}:${p.check}:${p.file}:${p.message}`);
+}
+
+test('yaml: maps, lists, flow lists, quotes, anchors, block scalars and nulls', () => {
+  const v = parseYaml([
+    'title: "ADR-0001: Quoted & fine"',
+    'plain: Image Pipeline & Protection 2026 (plan of record)',
+    "single: 'it''s'",
+    'tags: [api, "a, b", web]',
+    'related:',
+    '  - ../a.md',
+    '  - https://example.com/x',
+    'same-indent:',
+    '- one',
+    'life: &l [draft, active]',
+    'types:',
+    '  plan: *l',
+    'note: >-',
+    '  folded',
+    '  text',
+    'nothing:',
+    'n: 90',
+    'items:',
+    '  - path: src/a',
+    '    doc: docs/a.md',
+  ].join('\n'));
+  assert.equal(v.title, 'ADR-0001: Quoted & fine');
+  assert.equal(v.plain, 'Image Pipeline & Protection 2026 (plan of record)');
+  assert.equal(v.single, "it's");
+  assert.deepEqual(v.tags, ['api', 'a, b', 'web']);
+  assert.deepEqual(v.related, ['../a.md', 'https://example.com/x']);
+  assert.deepEqual(v['same-indent'], ['one']);
+  assert.deepEqual(v.types.plan, ['draft', 'active']);
+  assert.equal(v.note, 'folded text');
+  assert.equal(v.nothing, null);
+  assert.equal(v.n, 90);
+  assert.deepEqual(v.items, [{ path: 'src/a', doc: 'docs/a.md' }]);
+});
+
+test('yaml: an unquoted colon, a duplicate key and an unknown alias are errors', () => {
+  assert.throws(() => parseYaml('title: WP-1: a colon: inside'), /mapping values/);
+  assert.throws(() => parseYaml('a: 1\na: 2'), /duplicate key/);
+  assert.throws(() => parseYaml('a: *nope'), /unknown alias/);
+  assert.throws(() => parseYaml('a: `x`'), /cannot start/);
+});
+
+test('markdown: GitHub anchors for punctuation, dashes, code and duplicates', () => {
+  const doc = parseMarkdown('# Why — the inventory (measured)\n## `prime --diff` & more\n## Same\n## Same\nSetext\n---\n');
+  assert.deepEqual([...doc.anchors], ['why--the-inventory-measured', 'prime---diff--more', 'same', 'same-1', 'setext']);
+});
+
+test('acceptance: a live plan needs numbered acceptance criteria; implemented plans and spec-linked plans do not', async () => {
+  const plan = (status, body, extra = {}) => fm({ ...base, type: 'plan', status, ...extra }, body);
+  const problems = await check({
+    'docs/plans/a/x/README.md': plan('active', '# X\n## Acceptance criteria\n- **AC-1** Given a user, when …, then …\n'),
+    'docs/plans/a/y/README.md': plan('active', '# Y\n## Scope\n'),
+    'docs/plans/a/z/README.md': plan('draft', '# Z\n## Acceptance criteria\nGiven …\n'),
+    'docs/plans/a/old/README.md': plan('implemented', '# Old\n'),
+    'docs/plans/a/s/README.md': plan('active', '# S\n', { spec: '../../../specs/001-s/spec.md' }),
+    'docs/specs/001-s/spec.md': fm({ ...base, type: 'spec', status: 'active' }, '# S\n- FR-001 …\n'),
+    'docs/plans/a/x/architecture.md': plan('active', '# Part of plan x\n'),
+  });
+  const acceptance = problems.filter(p => p.includes(':acceptance:'));
+  assert.equal(acceptance.length, 2);
+  assert.ok(acceptance.some(p => p.includes('docs/plans/a/y/README.md') && p.includes('no "## Acceptance criteria"')));
+  assert.ok(acceptance.some(p => p.includes('docs/plans/a/z/README.md') && p.includes('has no ids')));
+  assert.ok(acceptance.every(p => p.startsWith('warn:')));
+});
+
+test('ids: a duplicated AC id, a reused ADR number and a reused spec number are errors', async () => {
+  const problems = await check({
+    'docs/plans/a/README.md': fm({ ...base, type: 'plan', status: 'active' }, '# A\n## Acceptance criteria\n- AC-1: one\n- AC-1: again\n'),
+    'docs/architecture/decisions/adr-0003-a.md': fm({ ...base, type: 'adr', status: 'accepted' }),
+    'docs/architecture/decisions/adr-0003-b.md': fm({ ...base, type: 'adr', status: 'accepted' }),
+    'docs/specs/001-a/spec.md': fm({ ...base, type: 'spec', status: 'draft' }),
+    'docs/specs/001-b/spec.md': fm({ ...base, type: 'spec', status: 'draft' }),
+  });
+  const ids = problems.filter(p => p.includes(':ids:'));
+  assert.ok(ids.some(p => p.includes('AC-1 is defined twice')));
+  assert.equal(ids.filter(p => p.includes('adr-0003')).length, 2);
+  assert.equal(ids.filter(p => p.includes('specs/001-')).length, 2);
+  assert.ok(ids.every(p => p.startsWith('error:')));
+});
+
+test('clarify: an open question blocks only a settled doc', async () => {
+  const problems = await check({
+    'docs/specs/001-a/spec.md': fm({ ...base, type: 'spec', status: 'draft' }, '# A\n[NEEDS CLARIFICATION: who pays?]\n'),
+    'docs/specs/002-b/spec.md': fm({ ...base, type: 'spec', status: 'active' }, '# B\n[NEEDS CLARIFICATION: who pays?]\n'),
+  });
+  const clarify = problems.filter(p => p.includes(':clarify:'));
+  assert.equal(clarify.length, 1);
+  assert.match(clarify[0], /002-b/);
+});
+
+test('actions: every incident action item has an owner', async () => {
+  const table = owner => `# Outage\n## Action items\n| Action | Type | Owner | Ticket |\n|---|---|---|---|\n| Add alert | detect | ${owner} | #12 |\n`;
+  const problems = await check({
+    'docs/reference/incidents/a.md': fm({ ...base, type: 'incident', status: 'resolved' }, table('Ammar')),
+    'docs/reference/incidents/b.md': fm({ ...base, type: 'incident', status: 'resolved' }, table('TBD')),
+  });
+  const actions = problems.filter(p => p.includes(':actions:'));
+  assert.equal(actions.length, 1);
+  assert.match(actions[0], /b\.md.*"Add alert" has no owner/);
+});
+
+test('drift: a moved file, a line past the end and a renamed symbol are reported; good citations pass', async () => {
+  const code = 'export class QuotaService {\n  guard(user) {\n    return user.tier;\n  }\n}\n';
+  const problems = await check({
+    'src/QuotaService.js': code,
+    'docs/reference/business-rules/quota.md': fm({ ...base, type: 'reference', status: 'active' }, [
+      '# Quota',
+      'Good: `src/QuotaService.js#QuotaService.guard`, `QuotaService.js:2`, `@./src/QuotaService.js#guard`, [link](../../../src/QuotaService.js#L2-L3).',
+      'Bad: `src/Gone.js#guard`, `src/QuotaService.js:99`, `src/QuotaService.js#enforce`.',
+      'Not citations: `docs/README.md#frontmatter`, `npm test`, `a.b`.',
+    ].join('\n')),
+  });
+  const drift = problems.filter(p => p.includes(':drift:'));
+  assert.equal(drift.length, 3, drift.join('\n'));
+  assert.ok(drift.some(p => /Gone\.js is not a file/.test(p)));
+  assert.ok(drift.some(p => /has only 5 lines/.test(p)));
+  assert.ok(drift.some(p => /"enforce" is not in src\/QuotaService\.js/.test(p)));
+});
+
+test('drift: a locked citation whose code body changed is reported', () => {
+  const repoBefore = fixture({ 'src/a.js': 'function guard() {\n  return 1;\n}\n', 'docs/a.md': '# A\n`src/a.js#guard`\n' });
+  const doc = parseMarkdown(repoBefore.read('docs/a.md'));
+  const [c] = citationsOf('docs/a.md', doc, repoBefore);
+  const lock = { [citationKey(c)]: fingerprint(c, repoBefore.read('src/a.js').split('\n')) };
+  assert.deepEqual(checkDrift('docs/a.md', doc, repoBefore, { lock }), []);
+  const repoAfter = fixture({ 'src/a.js': 'function guard() {\n  return 2;\n}\n', 'docs/a.md': '# A\n`src/a.js#guard`\n' });
+  assert.match(checkDrift('docs/a.md', doc, repoAfter, { lock })[0].message, /changed since the citation was locked/);
+});
+
+test('evidence: images under docs/ are reported unless their folder is allowed', async () => {
+  const repo = fixture({
+    'docs/README.md': readme().replace('evidence-allow: []', 'evidence-allow: [docs/design/]'),
+    'docs/plans/shot.png': 'x',
+    'docs/design/mock.png': 'x',
+  });
+  const { problems } = await runChecks(repo, { today: TODAY });
+  const evidence = problems.filter(p => p.check === 'evidence');
+  assert.deepEqual(evidence.map(p => p.file), ['docs/plans/shot.png']);
+});
+
+test('coverage: a listed module needs a current-state doc', async () => {
+  const repo = fixture({
+    'docs/README.md': readme().replace('modules: []', 'modules: [src/billing, src/ads]'),
+    'docs/reference/modules/billing.md': fm({ ...base, type: 'reference', status: 'active' }),
+  });
+  const { problems } = await runChecks(repo, { today: TODAY });
+  const coverage = problems.filter(p => p.check === 'coverage');
+  assert.equal(coverage.length, 1);
+  assert.match(coverage[0].message, /module src\/ads has no current-state doc/);
+});
+
+test('graduation (opt-in): an implemented plan nothing current links to is reported', async () => {
+  const repo = fixture({
+    'docs/README.md': readme().replace('graduation: off', 'graduation: error'),
+    'docs/plans/a/done/README.md': fm({ ...base, type: 'plan', status: 'implemented' }),
+    'docs/plans/a/kept/README.md': fm({ ...base, type: 'plan', status: 'implemented' }),
+    'docs/reference/modules/a.md': fm({ ...base, type: 'reference', status: 'active' }, '# A\nHistory: [plan](../../plans/a/kept/)\n'),
+  });
+  const { problems } = await runChecks(repo, { today: TODAY });
+  assert.deepEqual(problems.filter(p => p.check === 'graduation').map(p => p.file), ['docs/plans/a/done/README.md']);
+});
+
+test('no vocabulary block: the D³ default applies', async () => {
+  const repo = fixture({ 'docs/a.md': fm({ ...base, type: 'spec', status: 'draft' }) });
+  const { problems, vocabulary } = await runChecks(repo, { today: TODAY });
+  assert.equal(vocabulary.source, 'default');
+  assert.deepEqual(problems.filter(p => p.level === 'error'), []);
+});
