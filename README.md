@@ -4,7 +4,7 @@
 </picture>
 
 [![CI](https://github.com/abuammarsami/d3/actions/workflows/ci.yml/badge.svg)](https://github.com/abuammarsami/d3/actions/workflows/ci.yml)
-[![version](https://img.shields.io/badge/version-2.0.0-3f7f3b)](CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-2.1.0-3f7f3b)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-5e5d59)](https://docs.claude.com/en/docs/claude-code)
 [![docs-check](https://img.shields.io/badge/docs--check-zero%20deps-brightgreen)](tools/docs-check/README.md)

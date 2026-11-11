@@ -3,7 +3,7 @@
   "name": "d3",
   "displayName": "Document-Driven Development (D3)",
   "description": "One docs system in the repo that people and any coding agent share, so nobody has to guess from code: init (docs/, templates, AGENTS.md, PR template, docs CI), prime (load the docs a task needs), spec, capture (plans with acceptance criteria, ADRs, audits, incidents, rules, flows…), check (zero-dependency docs linter with citation drift), review (PR vs plan and ADRs), status.",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "author": {
     "name": "Md. Abu Ammar",
     "url": "https://github.com/abuammarsami"
