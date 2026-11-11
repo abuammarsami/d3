@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `docs/guides/document-types.md`: a plain-language guide to the document types (ADR, PRD, plan,
+  runbook, incident review, audit and the rest) and the question each one answers, linked from the
+  README. `/d3:init` now creates a copy at `docs/guides/document-types.md` in a new repo, listed in
+  the guides index.
+
+### Changed
+- README restructured in the order the most-used plugin READMEs follow: the pitch, install and the
+  first three commands, a real run, how it works, what's inside (each skill linked), then reference.
+  New sections: updating and uninstalling, when something goes wrong, and an FAQ entry on reasons
+  that live in tickets, chat or someone's head. The film link now points at "The line nobody
+  touches", with links to two more short films.
+
+### Fixed
+- The plugin icon was a 16-bit, 3.5 MB PNG that `claude plugin validate` rejected (`ICON_INVALID`);
+  it is now a standard 8-bit 512 px PNG.
+
 ### Security
 - `docs-check` skips symlinks: a pull request could commit one pointing outside the checkout (a CI
   runner's files) and the linter would read it and echo its lines into the CI log. `lock` refuses to

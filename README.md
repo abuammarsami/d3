@@ -4,22 +4,47 @@
 </picture>
 
 [![CI](https://github.com/abuammarsami/d3/actions/workflows/ci.yml/badge.svg)](https://github.com/abuammarsami/d3/actions/workflows/ci.yml)
-[![GitHub stars](https://img.shields.io/github/stars/abuammarsami/d3?style=flat)](https://github.com/abuammarsami/d3/stargazers)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![version](https://img.shields.io/badge/version-2.0.0-3f7f3b)](CHANGELOG.md)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-5e5d59)](https://docs.claude.com/en/docs/claude-code)
-[![AGENTS.md](https://img.shields.io/badge/AGENTS.md-any%20agent-3f7f3b)](https://agents.md)
 [![docs-check](https://img.shields.io/badge/docs--check-zero%20deps-brightgreen)](tools/docs-check/README.md)
 
-Every software team knows things the code doesn't say: why a rule exists, what the team decided, which
-bugs were already fixed once. Some of it sits in Jira tickets, wiki pages and old chat threads, and
-some only in people's heads. It's spread out, it drifts out of date, and an AI assistant working in
-the repo usually can't see it.
+**D³ (Document-Driven Development) is a Claude Code plugin that writes down what your code can't say
+(why a rule exists, what the team decided, which bug was already fixed once) as short pages in the
+repo, hands the right pages to your AI assistant before it changes anything, and checks in CI that
+the pages still match the code.**
 
-**D³ (Document-Driven Development) writes that knowledge down inside the project, as short plain pages
-that people and AI assistants both read, and checks in CI that the pages still match the code.**
+Every codebase has a line nobody dares to touch. Nobody remembers why it's there. Then an AI
+assistant "cleans it up", the tests pass, and it ships. The reason was never in the code, so there
+was nothing for the assistant, or a new teammate, to read.
 
-[![Watch the 80-second film](assets/film-poster.png)](https://github.com/abuammarsami/d3/releases/download/v2.0.0/d3-film.mp4)
+[![Watch the one-minute film: The line nobody touches](assets/film-poster.png)](https://github.com/abuammarsami/d3/releases/download/v2.0.0/d3-line.mp4)
+
+▶ [Watch the one-minute film](https://github.com/abuammarsami/d3/releases/download/v2.0.0/d3-line.mp4)
+
+Two more short films on the same idea:
+[One angle](https://github.com/abuammarsami/d3/releases/download/v2.0.0/d3-why.mp4) (47 seconds) and
+[Load-bearing](https://github.com/abuammarsami/d3/releases/download/v2.0.0/d3-tower.mp4) (52 seconds).
+
+## Install
+
+You need [Claude Code](https://docs.claude.com/en/docs/claude-code). The docs check also needs Node 18
+or newer, and nothing else.
+
+```text
+/plugin marketplace add abuammarsami/d3
+/plugin install d3@ammar-skills
+```
+
+### The first three things to type
+
+```text
+/d3:init                          set up docs/ in this repo (it lists every file and waits for your yes)
+/d3:prime "the task you're on"    load the few pages that govern the task
+/d3:capture --decision "…"        write down something you just decided
+```
+
+`init` never overwrites a file, and on a repo that already has docs it only reports what is missing.
 
 ## See it work
 
@@ -27,19 +52,6 @@ that people and AI assistants both read, and checks in CI that the pages still m
 
 This is a real run. A business rule names the function that enforces it. Someone renames the
 function, and the docs check points at the page that is now out of date, with the file and line.
-
-## Quick start
-
-In Claude Code:
-
-```text
-/plugin marketplace add abuammarsami/d3
-/plugin install d3@ammar-skills
-/d3:init
-```
-
-`init` shows you every file it would create and waits for your yes. It never overwrites a file, and
-on a repo that already has docs it only reports what is missing.
 
 ## How it works
 
@@ -62,6 +74,25 @@ The habits come from how large engineering teams already work: design docs with 
 written decision records (ADRs), blameless incident reviews and docs checked in CI. D³ sets them up
 in one command, so a solo developer or a small team can use them without a documentation department.
 
+## What's inside
+
+Seven skills and one linter. Each skill runs when you type its command; Claude also picks it up when
+you ask for the same thing in plain words ("load the context for this task", "write that down as a
+decision").
+
+| Skill | When you use it | What it does |
+|---|---|---|
+| [`/d3:init`](skills/init/SKILL.md) `[--backfill]` | Once per repo | Sets up `docs/` with one place for each kind of knowledge, page templates, a guide to the document types, a short `AGENTS.md` that `CLAUDE.md` imports, a PR template, the docs check and its CI. Dry run first. `--backfill` drafts module references and *proposed* ADRs from existing code. |
+| [`/d3:prime`](skills/prime/SKILL.md) `<task>` | Before a task | Loads the plan, ADRs, rules, module reference and flow that govern the task as a compact context pack, one line per doc. `--diff [base]` picks the docs that cite the files a branch changed. |
+| [`/d3:capture`](skills/capture/SKILL.md) `--<kind> <what>` | When you learn something | Files new knowledge on its page with the right template, updates the indexes and runs the docs check. Lists the files and asks before writing. |
+| [`/d3:spec`](skills/spec/SKILL.md) `<feature>` | When a feature needs a product review | Optional product spec (PRD): problem, users, non-goals, prioritised stories with Given/When/Then, and open questions marked `[NEEDS CLARIFICATION]` instead of guessed. |
+| [`/d3:review`](skills/review/SKILL.md) `[PR#\|branch]` | Before you merge | Read-only. Which acceptance criteria the change satisfies, which ADR or rule it contradicts, what behaviour changed with no doc updated, which citations it broke. |
+| [`/d3:check`](skills/check/SKILL.md) `[--drift] [--fix]` | Any time, and in CI | Runs the docs check and turns its findings into fixes. |
+| [`/d3:status`](skills/status/SKILL.md) | When you want the overview | What is in flight, overdue for review, undocumented, or not yet graduated. |
+
+[`/d3:d3`](skills/d3/SKILL.md) prints the help, and `/d3:d3 <verb>` routes to the commands above.
+The linter lives in [`tools/docs-check`](tools/docs-check/README.md) and runs without Claude.
+
 ## Who it's for
 
 - **Developers at any level.** Juniors get the context seniors carry in their heads. Seniors stop
@@ -83,20 +114,6 @@ in one command, so a solo developer or a small team can use them without a docum
 
 ## Reference
 
-### Commands
-
-| Command | What it does |
-|---|---|
-| `/d3:init [--backfill]` | Sets up `docs/` with one place for each kind of knowledge and a machine-read vocabulary, page templates, a short `AGENTS.md` that `CLAUDE.md` imports, a PR template, the docs check and its CI. Dry run first, never overwrites, and only reports on a repo that already has a docs system. `--backfill` drafts module references and *proposed* ADRs from existing code. |
-| `/d3:prime <task>` | Loads the plan, ADRs, rules, module reference and flow that govern the task as a compact context pack, one line per doc. `--diff [base]` picks the docs that cite the files a branch changed. |
-| `/d3:capture --<kind> <what>` | Files new knowledge on its page with the right template, then updates the indexes, the current-state doc and runs the docs check. Lists the files and asks before writing. |
-| `/d3:spec <feature>` | Optional product spec (PRD): problem, users, non-goals, prioritised stories with Given/When/Then, `FR-###`, `SC-###`, and open questions marked `[NEEDS CLARIFICATION]` instead of guessed. |
-| `/d3:check [--drift] [--fix]` | Runs the docs check and turns its findings into fixes. |
-| `/d3:review [PR#\|branch]` | Read-only. Which acceptance criteria the change satisfies, which ADR or rule it contradicts, what behaviour changed with no doc updated, which citations it broke. |
-| `/d3:status` | What is in flight, overdue for review, undocumented, or not yet graduated. |
-
-`/d3:d3` prints the help, and `/d3:d3 <verb>` routes to the commands above.
-
 ### Example: a review catching a real mistake
 
 ```text
@@ -116,6 +133,11 @@ Follow-ups:   intended? /d3:capture --decision "Paid users post without a monthl
 *From a smoke test of this release, trimmed.*
 
 ### Where each kind of knowledge goes
+
+New to ADRs, PRDs and runbooks? They are the document types most engineering teams settle on, and each
+answers one question: an **ADR** records why a decision was made, a **PRD** says what to build and for
+whom, a **runbook** says how to do an operation safely. [Which document to write](docs/guides/document-types.md)
+explains all of them in plain language.
 
 | Kind of knowledge | Page | Capture with |
 |---|---|---|
@@ -190,6 +212,11 @@ changes (a one-PR plan is five short sections), and LLM-written project overview
 `init` is a dry run until you confirm, never overwrites a file, and on a repo that already has a docs
 system it only reports what is missing.
 
+**Our reasons are already in Jira, Slack or someone's head. Why another place?** Because none of
+those is next to the code. A closed ticket or an old thread only helps a person who already knows
+it exists, and an AI assistant working in the repo never opens it. D³ copies the part that lasts
+(the decision, the rule, the bug that was fixed) onto a short page beside the code it explains.
+
 **Do we have to stop using Jira or Confluence?** No. Tickets track the work. D³ keeps the lasting
 reasons (decisions, rules, past bugs) next to the code they explain, and a page can link to the
 ticket it came from.
@@ -204,6 +231,30 @@ your `docs/README.md`, or keep the one you have. D³ and the docs check follow i
 
 **Does it need graphify, a session log or Cursor rules?** No. They are used only when they already
 exist ([shared/integrations.md](shared/integrations.md)).
+
+### Updating and uninstalling
+
+```text
+/plugin marketplace update ammar-skills     refresh the marketplace
+/plugin update d3@ammar-skills              get the latest version
+/plugin uninstall d3@ammar-skills           remove the plugin
+```
+
+Uninstalling removes the commands only. The pages in `docs/`, `AGENTS.md` and the copy of the docs
+check in `tools/docs-check/` belong to your repo and stay where they are.
+
+### When something goes wrong
+
+- **The `/d3:` commands don't appear.** Run `/plugin`, check that `d3` is installed and enabled, then
+  restart Claude Code.
+- **The docs check reports drift after a change you meant to make.** Update the page it names, then
+  run `node tools/docs-check/check.mjs lock` to record the new code as the reference.
+- **Mermaid diagrams are only checked by their first line.** That is the default with no
+  dependencies. For a full parse, install `mermaid` and `jsdom` next to the check
+  ([details](tools/docs-check/README.md)).
+- **The check fails to start.** It needs Node 18 or newer.
+- Anything else: [open an issue](https://github.com/abuammarsami/d3/issues) with the command and its
+  output.
 
 ### Testing
 
