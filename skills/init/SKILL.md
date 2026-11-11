@@ -1,6 +1,6 @@
 ---
 name: init
-description: "Sets up the D³ docs system in a repository: docs/README.md with the taxonomy and machine-read vocabulary, type folders with index READMEs, document templates, a lean AGENTS.md (with CLAUDE.md importing it), a pull request template, a zero-dependency docs linter and its CI workflow. Dry run first, never overwrites, and only reports on a repo that already has a docs system. --backfill then drafts module references and proposed ADRs from the existing code. Use when the user runs /d3:init or asks to set up docs for a repo."
+description: "Sets up the D³ docs system in a repository: docs/README.md with the taxonomy and machine-read vocabulary, type folders with index READMEs, document templates, a plain-language guide to the document types, a lean AGENTS.md (with CLAUDE.md importing it), a pull request template, a zero-dependency docs linter and its CI workflow. Dry run first, never overwrites, and only reports on a repo that already has a docs system. --backfill then drafts module references and proposed ADRs from the existing code. Use when the user runs /d3:init or asks to set up docs for a repo."
 argument-hint: "[--backfill]"
 ---
 

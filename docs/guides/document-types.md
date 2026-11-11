@@ -56,8 +56,10 @@ the consequences, including the bad ones.
 The rule that makes ADRs useful is that an accepted ADR is **never rewritten**. If the team changes its
 mind, it writes a new ADR that supersedes the old one. That way the history of why is still there.
 
-The idea was popularised by Michael Nygard's 2011 article "Documenting Architecture Decisions". D³ uses
-the [MADR](https://adr.github.io/madr/) format. Template: [adr.md](../../templates/docs/adr.md).
+The idea was popularised by Michael Nygard's 2011 article
+["Documenting Architecture Decisions"](https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions),
+whose record had a context, a decision and its consequences. D³ uses the
+[MADR](https://adr.github.io/madr/) format, which adds the options that were considered. Template: [adr.md](../../templates/docs/adr.md).
 
 Write one when a new teammate would reasonably ask "why on earth is it done this way?"
 
@@ -81,8 +83,9 @@ moment. A good runbook says how to check each step worked and how to undo it. Te
 
 Written after something broke in production. "Blameless" means it describes what the system allowed to
 happen, not who made the mistake, because people who fear blame stop reporting problems. It ends with
-action items that have an owner. The practice is described in Google's *Site Reliability Engineering*
-book. Template: [incident.md](../../templates/docs/incident.md).
+action items that have an owner. The practice is described in the
+["Postmortem Culture"](https://sre.google/sre-book/postmortem-culture/) chapter of Google's *Site
+Reliability Engineering* book. Template: [incident.md](../../templates/docs/incident.md).
 
 ## Two things that are easy to mix up
 
@@ -106,7 +109,7 @@ D³ did not invent these. It puts well-known practices in one layout:
 1. Find your question in the table above.
 2. Run `/d3:capture` and describe what you learned in a sentence. It proposes the document type and
    the file, and writes only after you say yes.
-3. Or copy the matching file from [`templates/docs/`](../../templates/docs/README.md) yourself.
+3. Or copy the matching file from the [templates folder](../../templates/docs/README.md) yourself.
 
 ## How you know it worked
 

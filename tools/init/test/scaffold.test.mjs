@@ -39,6 +39,10 @@ test('apply builds a docs system that passes its own check, and keeps existing f
   assert.equal(readFileSync(path.join(root, 'CLAUDE.md'), 'utf8'), '# Contract\n\n\n@AGENTS.md\n');
   assert.ok(existsSync(path.join(root, 'docs/architecture/decisions/README.md')));
   assert.ok(existsSync(path.join(root, 'tools/docs-check/src/yaml.mjs')));
+  const guide = readFileSync(path.join(root, 'docs/guides/document-types.md'), 'utf8');
+  assert.match(guide, /\]\(\.\.\/templates\/adr\.md\)/);
+  assert.doesNotMatch(guide, /templates\/docs\//);
+  assert.match(readFileSync(path.join(root, 'docs/guides/README.md'), 'utf8'), /\(document-types\.md\)/);
   const check = execFileSync('node', [checker, '--root', root, '--today', '2026-11-09'], { encoding: 'utf8' });
   assert.match(check, /0 error\(s\), 0 warning\(s\)/);
 });

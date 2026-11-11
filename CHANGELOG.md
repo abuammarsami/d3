@@ -10,7 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `docs/guides/document-types.md`: a plain-language guide to the document types (ADR, PRD, plan,
   runbook, incident review, audit and the rest) and the question each one answers, linked from the
-  README.
+  README. `/d3:init` now creates a copy at `docs/guides/document-types.md` in a new repo, listed in
+  the guides index.
 
 ### Changed
 - README restructured in the order the most-used plugin READMEs follow: the pitch, install and the

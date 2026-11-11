@@ -66,8 +66,9 @@ for (const file of readdirSync(path.join(plugin, 'templates/docs')).filter(f => 
   // The templates index is a real doc (dated); the templates themselves keep their placeholders.
   plan('create', `docs/templates/${file}`, () => (file === 'README.md' ? fill(read(`templates/docs/${file}`)) : read(`templates/docs/${file}`)));
 }
-for (const [dir, title, about] of BUCKETS) plan('create', `docs/${dir}/README.md`, () => bucket(dir, title, about));
+for (const [dir, title, about] of BUCKETS) plan('create', `docs/${dir}/README.md`, () => bucket(dir, title, about) + (dir === 'guides' ? GUIDE_ROW() : ''));
 plan('create', 'docs/reference/glossary.md', glossary);
+plan('create', 'docs/guides/document-types.md', guide);
 plan('create', 'AGENTS.md', () => read('templates/repo/AGENTS.md').replaceAll('<Project>', project));
 const claude = path.join(root, 'CLAUDE.md');
 if (!existsSync(claude)) plan('create', 'CLAUDE.md', () => read('templates/repo/CLAUDE.md'));
@@ -125,6 +126,16 @@ ${about}
 | Doc | Status | Owner | Last reviewed |
 |---|---|---|---|
 `;
+}
+
+// The plugin's own guide, re-owned and re-dated; in a scaffolded repo the templates sit in docs/templates/.
+function guide() {
+  return read('docs/guides/document-types.md').replaceAll('../../templates/docs/', '../templates/')
+    .replace(/^owner: .*$/m, `owner: ${ownerYaml}`).replace(/^created: .*$/m, `created: ${today}`)
+    .replace(/^last-reviewed: .*$/m, `last-reviewed: ${today}`);
+}
+function GUIDE_ROW() {
+  return `| [Which document to write (ADR, PRD, runbook and the rest)](document-types.md) | active | ${owner.replaceAll('|', '\\|')} | ${today} |\n`;
 }
 
 function glossary() {

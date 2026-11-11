@@ -82,7 +82,7 @@ decision").
 
 | Skill | When you use it | What it does |
 |---|---|---|
-| [`/d3:init`](skills/init/SKILL.md) `[--backfill]` | Once per repo | Sets up `docs/` with one place for each kind of knowledge, page templates, a short `AGENTS.md` that `CLAUDE.md` imports, a PR template, the docs check and its CI. Dry run first. `--backfill` drafts module references and *proposed* ADRs from existing code. |
+| [`/d3:init`](skills/init/SKILL.md) `[--backfill]` | Once per repo | Sets up `docs/` with one place for each kind of knowledge, page templates, a guide to the document types, a short `AGENTS.md` that `CLAUDE.md` imports, a PR template, the docs check and its CI. Dry run first. `--backfill` drafts module references and *proposed* ADRs from existing code. |
 | [`/d3:prime`](skills/prime/SKILL.md) `<task>` | Before a task | Loads the plan, ADRs, rules, module reference and flow that govern the task as a compact context pack, one line per doc. `--diff [base]` picks the docs that cite the files a branch changed. |
 | [`/d3:capture`](skills/capture/SKILL.md) `--<kind> <what>` | When you learn something | Files new knowledge on its page with the right template, updates the indexes and runs the docs check. Lists the files and asks before writing. |
 | [`/d3:spec`](skills/spec/SKILL.md) `<feature>` | When a feature needs a product review | Optional product spec (PRD): problem, users, non-goals, prioritised stories with Given/When/Then, and open questions marked `[NEEDS CLARIFICATION]` instead of guessed. |
