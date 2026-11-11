@@ -18,3 +18,4 @@ Developer how-tos and standards.
 
 | Doc | Status | Owner | Last reviewed |
 |---|---|---|---|
+| [Which document to write (ADR, PRD, runbook and the rest)](document-types.md) | active | Md. Abu Ammar | 2026-11-11 |

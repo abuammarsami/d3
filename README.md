@@ -134,6 +134,11 @@ Follow-ups:   intended? /d3:capture --decision "Paid users post without a monthl
 
 ### Where each kind of knowledge goes
 
+New to ADRs, PRDs and runbooks? They are the document types most engineering teams settle on, and each
+answers one question: an **ADR** records why a decision was made, a **PRD** says what to build and for
+whom, a **runbook** says how to do an operation safely. [Which document to write](docs/guides/document-types.md)
+explains all of them in plain language.
+
 | Kind of knowledge | Page | Capture with |
 |---|---|---|
 | Future work, with numbered acceptance criteria | `docs/plans/{module}/{kebab}/README.md` | `--plan` |

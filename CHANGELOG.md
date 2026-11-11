@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `docs/guides/document-types.md`: a plain-language guide to the document types (ADR, PRD, plan,
+  runbook, incident review, audit and the rest) and the question each one answers, linked from the
+  README.
+
 ### Changed
 - README restructured in the order the most-used plugin READMEs follow: the pitch, install and the
   first three commands, a real run, how it works, what's inside (each skill linked), then reference.
