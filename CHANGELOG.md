@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-11-11
+
 ### Added
 - `docs/guides/document-types.md`: a plain-language guide to the document types (ADR, PRD, plan,
   runbook, incident review, audit and the rest) and the question each one answers, linked from the
@@ -117,6 +119,7 @@ people and any coding agent. The doc system it packages started as the Partners 
   six-bucket fallback; optional graphify / `.remember` / Cursor-rules integrations used
   only when present.
 
+[2.1.0]: https://github.com/abuammarsami/d3/releases/tag/v2.1.0
 [2.0.0]: https://github.com/abuammarsami/d3/releases/tag/v2.0.0
 [1.0.1]: https://github.com/abuammarsami/d3/releases/tag/v1.0.1
 [1.0.0]: https://github.com/abuammarsami/d3/releases/tag/v1.0.0
