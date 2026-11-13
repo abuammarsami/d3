@@ -18,13 +18,13 @@ Every codebase has a line nobody dares to touch. Nobody remembers why it's there
 assistant "cleans it up", the tests pass, and it ships. The reason was never in the code, so there
 was nothing for the assistant, or a new teammate, to read.
 
-[![Watch the one-minute film: The line nobody touches](assets/film-poster.png)](https://github.com/abuammarsami/d3/releases/download/v2.0.0/d3-line.mp4)
+[![Watch the one-minute film: The line nobody touches](assets/film-poster.png)](https://github.com/abuammarsami/d3/releases/download/v2.1.0/d3-line.mp4)
 
-▶ [Watch the one-minute film](https://github.com/abuammarsami/d3/releases/download/v2.0.0/d3-line.mp4)
+▶ [Watch the one-minute film](https://github.com/abuammarsami/d3/releases/download/v2.1.0/d3-line.mp4)
 
 Two more short films on the same idea:
-[One angle](https://github.com/abuammarsami/d3/releases/download/v2.0.0/d3-why.mp4) (47 seconds) and
-[Load-bearing](https://github.com/abuammarsami/d3/releases/download/v2.0.0/d3-tower.mp4) (52 seconds).
+[One angle](https://github.com/abuammarsami/d3/releases/download/v2.1.0/d3-why.mp4) (47 seconds) and
+[Load-bearing](https://github.com/abuammarsami/d3/releases/download/v2.1.0/d3-tower.mp4) (52 seconds).
 
 ## Install
 

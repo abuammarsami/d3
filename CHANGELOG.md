@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- README film links point at the 2.1.0 release. "The line nobody touches" there is a new cut in which
+  the narrator reads the support message aloud.
+
 ## [2.1.0] - 2026-11-11
 
 ### Added
